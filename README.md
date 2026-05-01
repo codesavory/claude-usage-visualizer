@@ -55,3 +55,7 @@ This tool relies on `/api/oauth/usage`, an **unofficial** endpoint intended for 
 Review the [Claude Terms of Service](https://www.anthropic.com/legal/consumer-terms) before redistributing prebuilt binaries.
 
 This is a personal project, not affiliated with or endorsed by Anthropic.
+
+## License
+
+[MIT](./LICENSE) — free to use, modify, and distribute. No warranty.
