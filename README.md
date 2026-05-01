@@ -4,6 +4,10 @@ A macOS menu bar app that tracks your Claude Code usage against Max plan limits 
 
 Lives in your menu bar, color-codes itself by burn rate, and shows a popover with per-session usage, a 7-day block schedule, and an at-a-glance utilization gauge.
 
+<p align="center">
+  <img src="docs/screenshot.png" alt="Claude Usage Visualizer popover" width="380">
+</p>
+
 ## Features
 
 - **Menu bar icon** that tints green / yellow / orange / red based on burn rate and 5-hour block utilization.
