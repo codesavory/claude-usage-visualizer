@@ -57,7 +57,10 @@ actor SessionRegistry {
             at: sessionsDir, includingPropertiesForKeys: nil
         ) else { return [] }
 
-        var sessions: [RawSession] = []
+        // Each session file is named by PID; the same sessionId can appear in
+        // multiple files when a session is resumed across restarts. Collect all,
+        // then deduplicate below.
+        var all: [RawSession] = []
         for file in files where file.pathExtension == "json" {
             guard let data = try? Data(contentsOf: file),
                   let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
@@ -74,7 +77,7 @@ actor SessionRegistry {
             let name = obj["name"] as? String
             let alive = ProcessLiveness.isAlive(pid)
 
-            sessions.append(RawSession(
+            all.append(RawSession(
                 pid: pid,
                 sessionId: sessionId,
                 cwd: cwd,
@@ -85,6 +88,23 @@ actor SessionRegistry {
                 isRunning: alive
             ))
         }
-        return sessions.sorted { $0.startedAt > $1.startedAt }
+
+        // Deduplicate by sessionId. For each group keep the running instance
+        // (if any) or the most recently started one. This collapses resumed
+        // sessions and sub-agent PID files that share a parent sessionId into
+        // a single row.
+        var best: [String: RawSession] = [:]
+        for s in all {
+            guard let existing = best[s.sessionId] else { best[s.sessionId] = s; continue }
+            let prefer: Bool
+            if s.isRunning != existing.isRunning {
+                prefer = s.isRunning          // running always wins over dead
+            } else {
+                prefer = s.startedAt > existing.startedAt  // most recent wins
+            }
+            if prefer { best[s.sessionId] = s }
+        }
+
+        return best.values.sorted { $0.startedAt > $1.startedAt }
     }
 }

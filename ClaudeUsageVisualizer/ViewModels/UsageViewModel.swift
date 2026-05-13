@@ -95,6 +95,24 @@ final class UsageViewModel: ObservableObject {
     func refreshOAuthUsage() async {
         let snap = await oauth.refreshIfNeeded()
         liveUsage = snap
+        if let snap { writeUsageCache(snap) }
+    }
+
+    private func writeUsageCache(_ snap: OAuthUsageSnapshot) {
+        let fh = snap.fiveHour
+        let mins = Int(fh.resetsAt.timeIntervalSinceNow / 60)
+        let dict: [String: Any] = [
+            "percent": fh.utilization / 100.0,
+            "utilization_pct": fh.utilization,
+            "resets_at": ISO8601DateFormatter().string(from: fh.resetsAt),
+            "minutes_until_reset": max(0, mins),
+            "source": "visualizer",
+            "updated_at": ISO8601DateFormatter().string(from: snap.fetchedAt),
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: dict, options: .prettyPrinted) else { return }
+        let url = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".claude/usage_cache.json")
+        try? data.write(to: url)
     }
 
     func refreshNow() async {
