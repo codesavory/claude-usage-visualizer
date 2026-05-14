@@ -35,6 +35,7 @@
 		8F6DDBCBA3E0EC233DB4B67E /* SessionRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4899A6506715E7935842E4A /* SessionRegistry.swift */; };
 		8FC10E44A0E2ACD4D89FB037 /* BurnRate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73FC911DA2EBB9ED47371FBD /* BurnRate.swift */; };
 		950A33A3E9A5AD6AE120E7AF /* TokenFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2D665C8F5F4D92F8CF969D0 /* TokenFormatter.swift */; };
+		99354F3138163D51C2B71E29 /* BiometricCredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2BEAC5304E1C346B7CD8C03 /* BiometricCredentialStore.swift */; };
 		9F133CCD4B6E87A23093AEFE /* ProcessLiveness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17467672FAF801F214D2188E /* ProcessLiveness.swift */; };
 		A56EE367303006AA7B944D19 /* UsageHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3748114B6A00EC2BFC380C89 /* UsageHeaderView.swift */; };
 		A601E32AFA1C7D177B8F543A /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E325C01EC8F47C38EA4EA03 /* SettingsViewModel.swift */; };
@@ -52,6 +53,7 @@
 		D8B0F513B07586CA02F84B62 /* BlockScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DDAA9BACAA725EDD96CEB74 /* BlockScheduleView.swift */; };
 		DDA74A506E2FB2458928B868 /* JSONLStreamReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44F3E7640573D5785ACBB226 /* JSONLStreamReader.swift */; };
 		EF925DA30744920C6FFA5C12 /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5629308908FF2037E3E06FE /* InsightsView.swift */; };
+		F3C88AA714413299F444048B /* CredentialsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA746A58C27571899AC8BFE9 /* CredentialsManager.swift */; };
 		F6476630FA30AD956F205EE6 /* KeychainReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5ED31F3D12273254D57D5D97 /* KeychainReader.swift */; };
 /* End PBXBuildFile section */
 
@@ -100,7 +102,9 @@
 		C5E536B9AD1848F168217108 /* PopoverContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopoverContentView.swift; sourceTree = "<group>"; };
 		C8514795C819CAF4C00A46F1 /* OAuthUsageClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuthUsageClient.swift; sourceTree = "<group>"; };
 		D78F1A4CF6F26375056D2547 /* TranscriptWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptWatcher.swift; sourceTree = "<group>"; };
+		E2BEAC5304E1C346B7CD8C03 /* BiometricCredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricCredentialStore.swift; sourceTree = "<group>"; };
 		E4BF5EC91F7D4A5F71E38EA3 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		EA746A58C27571899AC8BFE9 /* CredentialsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialsManager.swift; sourceTree = "<group>"; };
 		F4899A6506715E7935842E4A /* SessionRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRegistry.swift; sourceTree = "<group>"; };
 		FA6C492B533BBF07B2D28136 /* UsageBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageBlock.swift; sourceTree = "<group>"; };
 		FF92FE21057CEE14D0818BE7 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -136,6 +140,7 @@
 			children = (
 				A5C0AE44B7294EDF8C2A22EA /* AIInsightsService.swift */,
 				014C3CE41BEFEAE862D4AA16 /* ApplyService.swift */,
+				EA746A58C27571899AC8BFE9 /* CredentialsManager.swift */,
 				01CC9B131C842E2D1CEC3FC0 /* HabitEngine.swift */,
 				699C306F64F567C7ECB3EF30 /* InsightsEngine.swift */,
 				82F1A2D20F5CD05B6348F14D /* NudgeScheduler.swift */,
@@ -165,6 +170,7 @@
 		720619ECDA37CFACB7AF470F /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				E2BEAC5304E1C346B7CD8C03 /* BiometricCredentialStore.swift */,
 				71F4B569CD86845BB9B4BD13 /* DurationFormatter.swift */,
 				AE09CB9F6F6F69F1FC417B71 /* FSEventStream.swift */,
 				44F3E7640573D5785ACBB226 /* JSONLStreamReader.swift */,
@@ -307,12 +313,14 @@
 				60E444A85AF948733A98D5C4 /* AppDelegate.swift in Sources */,
 				592876F08D2DF56A8CA6B103 /* ApplyConfirmSheet.swift in Sources */,
 				0AC7159B0F2FF6BD0E20D6A0 /* ApplyService.swift in Sources */,
+				99354F3138163D51C2B71E29 /* BiometricCredentialStore.swift in Sources */,
 				D8B0F513B07586CA02F84B62 /* BlockScheduleView.swift in Sources */,
 				CED451040CE8CD259C561A82 /* BreakNudge.swift in Sources */,
 				0449A116AEE7CDE013C9F809 /* BreakNudgeView.swift in Sources */,
 				8FC10E44A0E2ACD4D89FB037 /* BurnRate.swift in Sources */,
 				7018B118E439652222A7891A /* BurnRateGauge.swift in Sources */,
 				4787496B91E0C66EAC8FC270 /* ClaudeUsageVisualizerApp.swift in Sources */,
+				F3C88AA714413299F444048B /* CredentialsManager.swift in Sources */,
 				40B775AFB2C9E5F20D7D030B /* DurationFormatter.swift in Sources */,
 				B9833ABBDCE96D00F2839D45 /* FSEventStream.swift in Sources */,
 				29557BE3924D0AC417DDC4EB /* HabitEngine.swift in Sources */,

@@ -10,31 +10,29 @@ import Foundation
 actor OAuthUsageClient {
     private let endpoint = URL(string: "https://api.anthropic.com/api/oauth/usage")!
     private let session: URLSession
+    private let credentials: CredentialsManager
     private var cached: OAuthUsageSnapshot?
     private var consecutive429s: Int = 0
     private var nextAllowedFetch: Date = .distantPast
     private let defaultTTL: TimeInterval = 360 // 6 minutes
 
-    init() {
+    init(credentials: CredentialsManager = CredentialsManager()) {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 15
         config.waitsForConnectivity = false
         self.session = URLSession(configuration: config)
+        self.credentials = credentials
     }
 
     /// Returns the last-known snapshot. Does not trigger a network call.
     func lastKnown() -> OAuthUsageSnapshot? { cached }
 
-    /// Fetches if the cache is empty or older than TTL. Safe to call frequently;
-    /// returns the cached snapshot unchanged if we're inside the TTL or backoff
-    /// window.
+    /// Fetches if the cache is empty or older than TTL. Safe to call frequently.
     func refreshIfNeeded(now: Date = .now) async -> OAuthUsageSnapshot? {
         if let cached, now.timeIntervalSince(cached.fetchedAt) < defaultTTL {
             return cached
         }
-        if now < nextAllowedFetch {
-            return cached
-        }
+        if now < nextAllowedFetch { return cached }
         return await performFetch(now: now)
     }
 
@@ -46,10 +44,10 @@ actor OAuthUsageClient {
 
     // MARK: - Private
 
-    private func performFetch(now: Date) async -> OAuthUsageSnapshot? {
-        let creds: KeychainReader.ClaudeCredentials
+    private func performFetch(now: Date, isRetry: Bool = false) async -> OAuthUsageSnapshot? {
+        let accessToken: String
         do {
-            creds = try KeychainReader.readClaudeCredentials()
+            accessToken = try await credentials.currentAccessToken(now: now)
         } catch {
             cached = OAuthUsageSnapshot(
                 fiveHour: OAuthUsageWindow(utilization: 0, resetsAt: .distantFuture),
@@ -62,23 +60,9 @@ actor OAuthUsageClient {
             return cached
         }
 
-        if let expiresAt = creds.expiresAt, expiresAt < now {
-            // Token is expired. Claude Code refreshes it in the background
-            // when the CLI runs; don't attempt refresh ourselves.
-            cached = OAuthUsageSnapshot(
-                fiveHour: cached?.fiveHour ?? OAuthUsageWindow(utilization: 0, resetsAt: .distantFuture),
-                sevenDay: cached?.sevenDay ?? OAuthUsageWindow(utilization: 0, resetsAt: .distantFuture),
-                sevenDaySonnet: cached?.sevenDaySonnet,
-                sevenDayOpus: cached?.sevenDayOpus,
-                fetchedAt: cached?.fetchedAt ?? now,
-                status: .unauthorized
-            )
-            return cached
-        }
-
         var request = URLRequest(url: endpoint)
         request.httpMethod = "GET"
-        request.setValue("Bearer \(creds.accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         request.setValue("oauth-2025-04-20", forHTTPHeaderField: "anthropic-beta")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
@@ -104,6 +88,14 @@ actor OAuthUsageClient {
             }
 
             if http.statusCode == 401 || http.statusCode == 403 {
+                if !isRetry {
+                    // Try a silent token refresh (Touch ID, no password). If it
+                    // yields a new token, retry the fetch once.
+                    if let _ = await credentials.forceTokenRefresh() {
+                        return await performFetch(now: now, isRetry: true)
+                    }
+                }
+                // Refresh either failed or we already retried — surface unauthorized.
                 cached = OAuthUsageSnapshot(
                     fiveHour: cached?.fiveHour ?? OAuthUsageWindow(utilization: 0, resetsAt: .distantFuture),
                     sevenDay: cached?.sevenDay ?? OAuthUsageWindow(utilization: 0, resetsAt: .distantFuture),
@@ -115,10 +107,7 @@ actor OAuthUsageClient {
                 return cached
             }
 
-            guard (200..<300).contains(http.statusCode) else {
-                // Other error — keep cache, don't burn backoff
-                return cached
-            }
+            guard (200..<300).contains(http.statusCode) else { return cached }
 
             consecutive429s = 0
             nextAllowedFetch = .distantPast
@@ -150,7 +139,6 @@ actor OAuthUsageClient {
 
         let five = window("five_hour") ?? window("fiveHour")
         let seven = window("seven_day") ?? window("sevenDay")
-
         guard let five, let seven else { return nil }
 
         return OAuthUsageSnapshot(
