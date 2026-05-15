@@ -101,14 +101,23 @@ final class UsageViewModel: ObservableObject {
     private func writeUsageCache(_ snap: OAuthUsageSnapshot) {
         let fh = snap.fiveHour
         let mins = Int(fh.resetsAt.timeIntervalSinceNow / 60)
-        let dict: [String: Any] = [
+        let fmt = ISO8601DateFormatter()
+        var dict: [String: Any] = [
             "percent": fh.utilization / 100.0,
             "utilization_pct": fh.utilization,
-            "resets_at": ISO8601DateFormatter().string(from: fh.resetsAt),
+            "resets_at": fmt.string(from: fh.resetsAt),
             "minutes_until_reset": max(0, mins),
             "source": "visualizer",
-            "updated_at": ISO8601DateFormatter().string(from: snap.fetchedAt),
+            "updated_at": fmt.string(from: snap.fetchedAt),
         ]
+        let wk = snap.sevenDay
+        if wk.resetsAt != .distantFuture {
+            let wkMins = Int(wk.resetsAt.timeIntervalSinceNow / 60)
+            dict["weekly_percent"] = wk.utilization / 100.0
+            dict["weekly_utilization_pct"] = wk.utilization
+            dict["weekly_resets_at"] = fmt.string(from: wk.resetsAt)
+            dict["weekly_minutes_until_reset"] = max(0, wkMins)
+        }
         guard let data = try? JSONSerialization.data(withJSONObject: dict, options: .prettyPrinted) else { return }
         let url = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".claude/usage_cache.json")
