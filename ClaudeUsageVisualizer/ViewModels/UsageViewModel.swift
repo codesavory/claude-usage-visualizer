@@ -118,6 +118,15 @@ final class UsageViewModel: ObservableObject {
             dict["weekly_resets_at"] = fmt.string(from: wk.resetsAt)
             dict["weekly_minutes_until_reset"] = max(0, wkMins)
         }
+        // Plan detection: Max plan users have a separate per-model weekly budget;
+        // Pro users have sevenDayOpus == nil.
+        if snap.sevenDayOpus != nil {
+            dict["plan_name"] = "Max"
+            dict["plan_price"] = "$100+/mo"
+        } else if snap.status == .live || snap.status == .rateLimited {
+            dict["plan_name"] = "Pro"
+            dict["plan_price"] = "$20/mo"
+        }
         guard let data = try? JSONSerialization.data(withJSONObject: dict, options: .prettyPrinted) else { return }
         let url = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".claude/usage_cache.json")
