@@ -12,6 +12,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var cancellables: Set<AnyCancellable> = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Enforce single instance: terminate any older copy that's already running.
+        let bundleId = Bundle.main.bundleIdentifier ?? ""
+        let others = NSRunningApplication.runningApplications(withBundleIdentifier: bundleId)
+            .filter { $0.processIdentifier != ProcessInfo.processInfo.processIdentifier }
+        others.forEach { $0.terminate() }
+
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         configureStatusButton(state: .offline, title: nil)
         statusItem.button?.action = #selector(togglePopover)

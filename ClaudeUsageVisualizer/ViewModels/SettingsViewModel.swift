@@ -12,8 +12,15 @@ final class SettingsViewModel: ObservableObject {
     @AppStorage("burnCriticalThreshold") var burnCriticalThreshold: Double = 20_000
     @AppStorage("refreshIntervalSeconds") var refreshIntervalSeconds: Double = 3
 
-    @AppStorage("launchAtLogin") var launchAtLogin: Bool = false {
+    @AppStorage("launchAtLogin") var launchAtLogin: Bool = true {
         didSet { updateLaunchAtLogin() }
+    }
+
+    init() {
+        // Register on first launch (AppStorage default = true, but didSet doesn't fire for defaults).
+        if SMAppService.mainApp.status == .notRegistered {
+            try? SMAppService.mainApp.register()
+        }
     }
 
     var tier: UsageTier {
