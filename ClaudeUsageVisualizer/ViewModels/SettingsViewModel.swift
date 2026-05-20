@@ -17,9 +17,13 @@ final class SettingsViewModel: ObservableObject {
     }
 
     init() {
-        // Register on first launch (AppStorage default = true, but didSet doesn't fire for defaults).
-        if SMAppService.mainApp.status == .notRegistered {
+        // Sync login-item registration on every launch so the OS state matches
+        // the stored preference. didSet doesn't fire for AppStorage defaults.
+        let shouldLaunch = UserDefaults.standard.object(forKey: "launchAtLogin") as? Bool ?? true
+        if shouldLaunch {
             try? SMAppService.mainApp.register()
+        } else {
+            try? SMAppService.mainApp.unregister()
         }
     }
 
