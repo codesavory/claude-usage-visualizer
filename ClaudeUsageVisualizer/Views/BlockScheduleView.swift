@@ -112,7 +112,7 @@ struct BlockScheduleView: View {
                 .kerning(0.8)
             Spacer()
             if let live = liveUsage, live.status == .live || live.status == .rateLimited {
-                let secs = max(0, live.fiveHour.resetsAt.timeIntervalSince(Date()))
+                let secs = live.fiveHour.resetsAt == .distantFuture ? 0 : max(0, live.fiveHour.resetsAt.timeIntervalSince(Date()))
                 if secs > 0 {
                     HStack(spacing: 3) {
                         Image(systemName: "arrow.clockwise").font(.caption2).foregroundStyle(.secondary)

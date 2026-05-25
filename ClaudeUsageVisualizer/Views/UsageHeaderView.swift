@@ -19,7 +19,7 @@ struct UsageHeaderView: View {
         }()
 
         let resetSeconds: TimeInterval = {
-            if let live {
+            if let live, live.fiveHour.resetsAt != .distantFuture {
                 return max(0, live.fiveHour.resetsAt.timeIntervalSince(Date()))
             }
             return fallbackReset
@@ -61,16 +61,16 @@ struct UsageHeaderView: View {
             }
             .frame(height: 6)
 
-            if let live, live.sevenDay.resetsAt != .distantFuture {
-                weeklyRow(live.sevenDay)
-            }
-
             HStack(spacing: 4) {
                 Text("\(messages) msgs · \(tier.displayName)")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                 Spacer()
                 sourceLabel(live)
+            }
+
+            if let live, live.sevenDay.resetsAt != .distantFuture {
+                weeklyRow(live.sevenDay)
             }
 
             Text(headerQuip)
@@ -123,28 +123,27 @@ struct UsageHeaderView: View {
     @ViewBuilder
     private func weeklyRow(_ week: OAuthUsageWindow) -> some View {
         let r = min(1.0, week.utilization / 100.0)
-        let secs = max(0, week.resetsAt.timeIntervalSince(Date()))
-        VStack(alignment: .leading, spacing: 3) {
+        let secs = week.resetsAt == .distantFuture ? 0 : max(0, week.resetsAt.timeIntervalSince(Date()))
+        VStack(alignment: .leading, spacing: 2) {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.secondary.opacity(0.10))
+                    Capsule().fill(Color.secondary.opacity(0.07))
                     Capsule()
-                        .fill(colorForRatio(r).opacity(0.55))
+                        .fill(Color.secondary.opacity(0.25))
                         .frame(width: geo.size.width * r)
                         .animation(.easeInOut(duration: 0.4), value: r)
                 }
             }
-            .frame(height: 3)
+            .frame(height: 2)
             HStack(spacing: 0) {
                 Text("\(Int((r * 100).rounded()))% weekly")
-                    .foregroundStyle(colorForRatio(r))
                 if secs > 0 {
-                    Text(" · resets \(DurationFormatter.compact(secs))")
-                        .foregroundStyle(.tertiary)
+                    Text(" · resets \(DurationFormatter.daysAndHours(secs))")
                 }
             }
             .font(.caption2)
             .monospacedDigit()
+            .foregroundStyle(.quaternary)
         }
     }
 

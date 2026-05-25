@@ -14,6 +14,16 @@ enum DurationFormatter {
         return "\(total)s"
     }
 
+    static func daysAndHours(_ interval: TimeInterval) -> String {
+        let total = max(0, Int(interval))
+        let d = total / 86400
+        let h = (total % 86400) / 3600
+        let m = (total % 3600) / 60
+        if d > 0 { return "\(d)d \(h)h" }
+        if h > 0 { return "\(h)h \(m)m" }
+        return "\(m)m"
+    }
+
     static func short(_ interval: TimeInterval) -> String {
         let total = max(0, Int(interval))
         let h = total / 3600
