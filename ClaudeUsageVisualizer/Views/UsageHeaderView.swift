@@ -69,10 +69,6 @@ struct UsageHeaderView: View {
                 sourceLabel(live)
             }
 
-            if let live, live.sevenDay.resetsAt != .distantFuture {
-                weeklyRow(live.sevenDay)
-            }
-
             Text(headerQuip)
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
@@ -117,33 +113,6 @@ struct UsageHeaderView: View {
             Text("sign in to Claude Code").font(.caption2).foregroundStyle(.tertiary)
         case .stale, .unavailable, .none:
             Text("estimated").font(.caption2).foregroundStyle(.tertiary)
-        }
-    }
-
-    @ViewBuilder
-    private func weeklyRow(_ week: OAuthUsageWindow) -> some View {
-        let r = min(1.0, week.utilization / 100.0)
-        let secs = week.resetsAt == .distantFuture ? 0 : max(0, week.resetsAt.timeIntervalSince(Date()))
-        VStack(alignment: .leading, spacing: 2) {
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color.secondary.opacity(0.07))
-                    Capsule()
-                        .fill(Color.secondary.opacity(0.25))
-                        .frame(width: geo.size.width * r)
-                        .animation(.easeInOut(duration: 0.4), value: r)
-                }
-            }
-            .frame(height: 2)
-            HStack(spacing: 0) {
-                Text("\(Int((r * 100).rounded()))% weekly")
-                if secs > 0 {
-                    Text(" · resets \(DurationFormatter.daysAndHours(secs))")
-                }
-            }
-            .font(.caption2)
-            .monospacedDigit()
-            .foregroundStyle(.quaternary)
         }
     }
 

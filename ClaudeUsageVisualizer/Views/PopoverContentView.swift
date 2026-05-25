@@ -14,6 +14,9 @@ struct PopoverContentView: View {
             } else {
                 content
             }
+            if let live = viewModel.liveUsage, live.sevenDay.resetsAt != .distantFuture {
+                weeklyBar(live.sevenDay)
+            }
             footer
         }
         .frame(width: Theme.popoverWidth)
@@ -59,6 +62,36 @@ struct PopoverContentView: View {
             )
         }
         .padding(Theme.popoverPadding)
+    }
+
+    @ViewBuilder
+    private func weeklyBar(_ week: OAuthUsageWindow) -> some View {
+        let r = min(1.0, week.utilization / 100.0)
+        let secs = week.resetsAt == .distantFuture ? 0 : max(0, week.resetsAt.timeIntervalSince(Date()))
+        VStack(spacing: 2) {
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Rectangle().fill(Color.secondary.opacity(0.07))
+                    Rectangle()
+                        .fill(Color.secondary.opacity(0.20))
+                        .frame(width: geo.size.width * r)
+                        .animation(.easeInOut(duration: 0.4), value: r)
+                }
+            }
+            .frame(height: 2)
+            HStack(spacing: 0) {
+                Text("\(Int((r * 100).rounded()))% weekly")
+                if secs > 0 {
+                    Text(" · resets \(DurationFormatter.daysAndHours(secs))")
+                }
+                Spacer()
+            }
+            .font(.caption2)
+            .monospacedDigit()
+            .foregroundStyle(.quaternary)
+            .padding(.horizontal, Theme.popoverPadding)
+            .padding(.bottom, 4)
+        }
     }
 
     private var loading: some View {
