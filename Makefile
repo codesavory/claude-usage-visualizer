@@ -4,7 +4,7 @@ BUILT   = $(DERIVED)/Build/Products/Release/ClaudeUsageVisualizer.app
 DEST    = /Applications/ClaudeUsageVisualizer.app
 LSREG   = /System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister
 
-.PHONY: install build clean
+.PHONY: install build test clean
 
 # Build and install in one step — the only way to deploy the Release build.
 install: build
@@ -20,6 +20,9 @@ install: build
 
 build:
 	xcodebuild -scheme $(SCHEME) -configuration Release -derivedDataPath $(DERIVED) build
+
+test:
+	xcodebuild test -scheme $(SCHEME) -destination 'platform=macOS' -derivedDataPath $(DERIVED)
 
 clean:
 	rm -rf build

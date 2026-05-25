@@ -89,22 +89,22 @@ actor SessionRegistry {
             ))
         }
 
-        // Deduplicate by sessionId. For each group keep the running instance
-        // (if any) or the most recently started one. This collapses resumed
-        // sessions and sub-agent PID files that share a parent sessionId into
-        // a single row.
+        return Self.deduplicate(all)
+    }
+
+    // Exposed for testing. Deduplicates by sessionId: running > dead, then most-recent.
+    static func deduplicate(_ all: [RawSession]) -> [RawSession] {
         var best: [String: RawSession] = [:]
         for s in all {
             guard let existing = best[s.sessionId] else { best[s.sessionId] = s; continue }
             let prefer: Bool
             if s.isRunning != existing.isRunning {
-                prefer = s.isRunning          // running always wins over dead
+                prefer = s.isRunning
             } else {
-                prefer = s.startedAt > existing.startedAt  // most recent wins
+                prefer = s.startedAt > existing.startedAt
             }
             if prefer { best[s.sessionId] = s }
         }
-
         return best.values.sorted { $0.startedAt > $1.startedAt }
     }
 }

@@ -112,7 +112,7 @@ actor OAuthUsageClient {
             consecutive429s = 0
             nextAllowedFetch = .distantPast
 
-            if let snap = parseResponse(data, fetchedAt: now) {
+            if let snap = Self.parseResponse(data, fetchedAt: now) {
                 cached = snap
                 return snap
             }
@@ -122,7 +122,7 @@ actor OAuthUsageClient {
         }
     }
 
-    private func parseResponse(_ data: Data, fetchedAt: Date) -> OAuthUsageSnapshot? {
+    static func parseResponse(_ data: Data, fetchedAt: Date) -> OAuthUsageSnapshot? {
         guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             return nil
         }
@@ -151,7 +151,7 @@ actor OAuthUsageClient {
         )
     }
 
-    private static func parseDate(_ s: String) -> Date? {
+    static func parseDate(_ s: String) -> Date? {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         if let d = f.date(from: s) { return d }
