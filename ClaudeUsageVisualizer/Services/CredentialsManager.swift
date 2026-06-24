@@ -1,5 +1,6 @@
 import Foundation
 import LocalAuthentication
+import AppKit
 
 /// Single source of truth for the OAuth access token used by `OAuthUsageClient`.
 ///
@@ -54,43 +55,65 @@ actor CredentialsManager {
             return cache.accessToken
         }
 
-        // 2. No biometrics on this Mac — fall back to source keychain once.
-        guard BiometricCredentialStore.isBiometryAvailable() else {
-            return try await bootstrapFromSource(now: now)
+        // 2. Biometric store (Touch ID prompt) when available. Best-effort:
+        //    any failure EXCEPT an explicit user cancel falls through to the
+        //    plain store. This covers ad-hoc-signed builds where the
+        //    data-protection keychain rejects the read with
+        //    errSecMissingEntitlement (-34018) rather than `notFound`. Without
+        //    this fall-through the app would error out instead of using the
+        //    plain store it already bootstrapped into.
+        if BiometricCredentialStore.isBiometryAvailable() {
+            let context = BiometricCredentialStore.makeContext(reason: "Access your Claude Code OAuth token")
+            do {
+                let envelope = try BiometricCredentialStore.read(context: context)
+                return try await token(from: envelope, biometricContext: context, now: now)
+            } catch BiometricCredentialStore.StoreError.userCancelled {
+                throw CredentialError.userCancelled
+            } catch {
+                // notFound, missing entitlement, or any other keychain error —
+                // fall through to the plain store / bootstrap.
+            }
         }
 
-        let context = BiometricCredentialStore.makeContext(reason: "Access your Claude Code OAuth token")
-
-        // 3. Read biometric store (Touch ID prompt).
-        let envelope: BiometricCredentialStore.Envelope
-        do {
-            envelope = try BiometricCredentialStore.read(context: context)
-        } catch BiometricCredentialStore.StoreError.notFound {
-            // First-ever launch: bootstrap from source (single password prompt).
-            return try await bootstrapFromSource(now: now)
-        } catch BiometricCredentialStore.StoreError.userCancelled {
-            throw CredentialError.userCancelled
-        } catch {
-            // Read failure for any other reason — do NOT fall back to source keychain.
-            throw CredentialError.biometryError
+        // 3. App-owned plain store (no prompt). Holds the token whenever the
+        //    biometric write was unavailable or failed at bootstrap.
+        if let envelope = try? PlainCredentialStore.read() {
+            return try await token(from: envelope, biometricContext: nil, now: now)
         }
 
-        // 4. Token expired — try OAuth refresh. Do NOT fall back to source on failure.
+        // 4. First-ever launch: bootstrap from source (single password prompt).
+        return try await bootstrapFromSource(now: now)
+    }
+
+    /// Returns a usable access token from a stored envelope, refreshing in place
+    /// if it has expired. Writes any refreshed token back to the same store the
+    /// envelope came from (biometric when `biometricContext` is non-nil, else
+    /// the plain store). Never reads the source keychain.
+    private func token(
+        from envelope: BiometricCredentialStore.Envelope,
+        biometricContext: LAContext?,
+        now: Date
+    ) async throws -> String {
         if let exp = envelope.expiresAt, exp.timeIntervalSince(now) <= expiryGracePeriod {
             guard let refreshToken = envelope.refreshToken else {
                 throw CredentialError.noCredentials
             }
-            // throws CredentialError.refreshFailed on network/server error — propagates up,
-            // caller surfaces an error state rather than prompting for a password.
             let refreshed = try await refresh(refreshToken: refreshToken, now: now)
-            try? BiometricCredentialStore.write(refreshed, context: context)
+            persist(refreshed, biometricContext: biometricContext)
             cache = InMemoryCache(accessToken: refreshed.accessToken, expiresAt: refreshed.expiresAt)
             return refreshed.accessToken
         }
-
-        // 5. Token still fresh.
         cache = InMemoryCache(accessToken: envelope.accessToken, expiresAt: envelope.expiresAt)
         return envelope.accessToken
+    }
+
+    /// Writes back to whichever app-owned store the token came from.
+    private func persist(_ envelope: BiometricCredentialStore.Envelope, biometricContext: LAContext?) {
+        if let biometricContext {
+            try? BiometricCredentialStore.write(envelope, context: biometricContext)
+        } else {
+            try? PlainCredentialStore.write(envelope)
+        }
     }
 
     /// Called by OAuthUsageClient on 401/403. Silently tries to obtain a fresh
@@ -98,17 +121,25 @@ actor CredentialsManager {
     /// store in place. Never deletes the biometric store, never prompts for a
     /// password. Returns the new token on success, nil on failure.
     func forceTokenRefresh() async -> String? {
-        guard BiometricCredentialStore.isBiometryAvailable() else { return nil }
-        let context = BiometricCredentialStore.makeContext(reason: "Refresh your Claude Code OAuth token")
-        guard
-            let envelope = try? BiometricCredentialStore.read(context: context),
-            let refreshToken = envelope.refreshToken
-        else { return nil }
+        // Read the refresh token from whichever app-owned store holds it.
+        var biometricContext: LAContext?
+        var envelope: BiometricCredentialStore.Envelope?
+        if BiometricCredentialStore.isBiometryAvailable() {
+            let context = BiometricCredentialStore.makeContext(reason: "Refresh your Claude Code OAuth token")
+            if let e = try? BiometricCredentialStore.read(context: context) {
+                biometricContext = context
+                envelope = e
+            }
+        }
+        if envelope == nil {
+            envelope = try? PlainCredentialStore.read()
+        }
+        guard let envelope, let refreshToken = envelope.refreshToken else { return nil }
 
         guard let refreshed = try? await refresh(refreshToken: refreshToken, now: .now) else {
             return nil
         }
-        try? BiometricCredentialStore.write(refreshed, context: context)
+        persist(refreshed, biometricContext: biometricContext)
         cache = InMemoryCache(accessToken: refreshed.accessToken, expiresAt: refreshed.expiresAt)
         return refreshed.accessToken
     }
@@ -122,6 +153,21 @@ actor CredentialsManager {
     // MARK: - Private
 
     private func bootstrapFromSource(now: Date) async throws -> String {
+        // This is an LSUIElement (menu-bar) app. A keychain prompt raised while
+        // the app is a background accessory gets auto-cancelled by SecurityAgent
+        // (errSecUserCanceled / -128) — the user's click never lands. Briefly
+        // promote to a regular foreground app so the prompt is owned by an
+        // active app and holds. IMPORTANT: do the activation on the main thread
+        // but run the blocking SecItemCopyMatching OFF the main thread, so the
+        // main run loop stays free to service the modal dialog.
+        await MainActor.run {
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
+        }
+        defer {
+            Task { @MainActor in NSApp.setActivationPolicy(.accessory) }
+        }
+
         let creds: KeychainReader.ClaudeCredentials
         do {
             creds = try KeychainReader.readClaudeCredentials()
@@ -135,11 +181,27 @@ actor CredentialsManager {
             expiresAt: creds.expiresAt
         )
 
+        // Persist into an app-owned store so the source item is NEVER read
+        // again. Prefer the Touch ID-gated store; if biometry is unavailable or
+        // its write fails, fall back to the plain store. Either way the source
+        // keychain (the login-password prompt) is touched at most once ever.
+        var storedInBiometry = false
         if BiometricCredentialStore.isBiometryAvailable() {
             let writeCtx = BiometricCredentialStore.makeContext(
                 reason: "Save your Claude Code OAuth token for Touch ID access"
             )
-            try? BiometricCredentialStore.write(envelope, context: writeCtx)
+            do {
+                try BiometricCredentialStore.write(envelope, context: writeCtx)
+                storedInBiometry = true
+            } catch {
+                // Ad-hoc builds can't use the data-protection keychain
+                // (errSecMissingEntitlement / -34018); fall back to the plain
+                // store below.
+                storedInBiometry = false
+            }
+        }
+        if !storedInBiometry {
+            try? PlainCredentialStore.write(envelope)
         }
 
         cache = InMemoryCache(accessToken: creds.accessToken, expiresAt: creds.expiresAt)

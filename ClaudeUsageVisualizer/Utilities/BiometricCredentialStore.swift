@@ -90,13 +90,18 @@ enum BiometricCredentialStore {
             throw StoreError.biometryUnavailable
         }
 
+        // NOTE: do NOT pass kSecUseAuthenticationContext here. Adding a
+        // .biometryCurrentSet item with an un-evaluated LAContext makes
+        // SecItemAdd fail with errSecAuthFailed, which was being swallowed by
+        // the caller's `try?` — leaving the store empty and forcing a re-read
+        // of the source keychain (the recurring login-password prompt). The
+        // biometry gate is enforced on READ; the ADD needs no auth context.
         let addQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
             kSecValueData as String: data,
             kSecAttrAccessControl as String: access,
-            kSecUseAuthenticationContext as String: context,
         ]
         let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
         switch addStatus {
@@ -126,6 +131,66 @@ enum BiometricCredentialStore {
         ctx.localizedReason = reason
         ctx.touchIDAuthenticationAllowableReuseDuration = 60
         return ctx
+    }
+}
+
+/// Fallback app-owned credential store with NO biometry gate. Used only when
+/// Touch ID is unavailable or the biometric write fails. Because the item is
+/// owned by this app (created by it), reads never prompt for a password. Its
+/// only job is to guarantee the source `Claude Code-credentials` item is read
+/// at most once ever, so the login-password prompt can never recur.
+enum PlainCredentialStore {
+    static let service = "dev.claudeusagevisualizer.credentials.plain"
+    static let account = "oauth"
+
+    static func read() throws -> BiometricCredentialStore.Envelope {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne,
+        ]
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        switch status {
+        case errSecSuccess: break
+        case errSecItemNotFound: throw BiometricCredentialStore.StoreError.notFound
+        default: throw BiometricCredentialStore.StoreError.osStatus(status)
+        }
+        guard let data = item as? Data else { throw BiometricCredentialStore.StoreError.decodeFailed }
+        do { return try JSONDecoder.cuv.decode(BiometricCredentialStore.Envelope.self, from: data) }
+        catch { throw BiometricCredentialStore.StoreError.decodeFailed }
+    }
+
+    static func write(_ envelope: BiometricCredentialStore.Envelope) throws {
+        let data = try JSONEncoder.cuv.encode(envelope)
+        let base: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+        ]
+        let updateStatus = SecItemUpdate(base as CFDictionary, [kSecValueData as String: data] as CFDictionary)
+        if updateStatus == errSecSuccess { return }
+        if updateStatus != errSecItemNotFound {
+            throw BiometricCredentialStore.StoreError.osStatus(updateStatus)
+        }
+        var add = base
+        add[kSecValueData as String] = data
+        add[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+        let addStatus = SecItemAdd(add as CFDictionary, nil)
+        if addStatus != errSecSuccess {
+            throw BiometricCredentialStore.StoreError.osStatus(addStatus)
+        }
+    }
+
+    static func delete() {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+        ]
+        SecItemDelete(query as CFDictionary)
     }
 }
 
