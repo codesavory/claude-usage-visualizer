@@ -21,7 +21,16 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_FILE: ClaudeUsageVisualizer/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: ClaudeUsageVisualizer/Resources/ClaudeUsageVisualizer.entitlements
-        CODE_SIGN_STYLE: Automatic
+        # Sign with a stable self-signed identity (valid to 2036) instead of
+        # ad-hoc. Ad-hoc changes the code hash every rebuild, which invalidates
+        # the keychain ACL on the app's own credential item and forces a fresh
+        # login-password prompt after each reinstall. A stable identity keeps a
+        # constant designated requirement, so keychain ownership survives
+        # rebuilds and the prompt never recurs.
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "md-local-signing"
+        DEVELOPMENT_TEAM: ""
+        PROVISIONING_PROFILE_SPECIFIER: ""
         SWIFT_VERSION: "6.0"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         GENERATE_INFOPLIST_FILE: true
