@@ -72,17 +72,21 @@ enum ClaudeModel: String, Codable, Sendable, CaseIterable, Hashable {
 }
 
 enum UsageTier: String, Codable, Sendable, CaseIterable {
-    case max5x, max20x
+    case pro, max5x, max20x
 
     var displayName: String {
         switch self {
+        case .pro: return "Pro"
         case .max5x: return "Max 5x"
         case .max20x: return "Max 20x"
         }
     }
 
+    /// Approximate messages allowed in one 5-hour block. Max 5x and Max 20x are
+    /// 5x and 20x the Pro allowance, which is the origin of their names.
     var messagesPerBlock: Int {
         switch self {
+        case .pro: return 45
         case .max5x: return 225
         case .max20x: return 900
         }

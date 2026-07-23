@@ -117,4 +117,54 @@ struct OAuthParsingTests {
         let garbage = "not json".data(using: .utf8)!
         #expect(OAuthUsageClient.parseResponse(garbage, fetchedAt: fetchedAt) == nil)
     }
+
+    // MARK: plan inference
+
+    /// A per-model weekly window is only returned on Max plans, so its absence
+    /// is the Pro signal used for the plan badge and the usage_cache plan_name.
+    @Test func planSignal_proResponse_hasNoOpusWindow() throws {
+        let json = """
+        {
+            "five_hour": {"utilization": 43, "resets_at": "2026-07-23T07:00:00Z"},
+            "seven_day": {"utilization": 25, "resets_at": "2026-07-26T02:59:00Z"}
+        }
+        """.data(using: .utf8)!
+
+        let s = try #require(OAuthUsageClient.parseResponse(json, fetchedAt: fetchedAt))
+        #expect(s.sevenDayOpus == nil)
+        #expect(s.status == .live)
+    }
+
+    @Test func planSignal_maxResponse_hasOpusWindow() throws {
+        let json = """
+        {
+            "five_hour": {"utilization": 43, "resets_at": "2026-07-23T07:00:00Z"},
+            "seven_day": {"utilization": 25, "resets_at": "2026-07-26T02:59:00Z"},
+            "seven_day_opus": {"utilization": 8, "resets_at": "2026-07-26T02:59:00Z"}
+        }
+        """.data(using: .utf8)!
+
+        let s = try #require(OAuthUsageClient.parseResponse(json, fetchedAt: fetchedAt))
+        #expect(s.sevenDayOpus != nil)
+    }
+}
+
+@Suite("UsageTier")
+struct UsageTierTests {
+
+    @Test func pro_isAvailableAndNamed() {
+        #expect(UsageTier(rawValue: "pro") == .pro)
+        #expect(UsageTier.pro.displayName == "Pro")
+        #expect(UsageTier.allCases.contains(.pro))
+    }
+
+    /// Max tiers are named for their multiple of the Pro allowance.
+    @Test func maxTiers_areMultiplesOfPro() {
+        #expect(UsageTier.max5x.messagesPerBlock == UsageTier.pro.messagesPerBlock * 5)
+        #expect(UsageTier.max20x.messagesPerBlock == UsageTier.pro.messagesPerBlock * 20)
+    }
+
+    @Test func unknownRawValue_isNil() {
+        #expect(UsageTier(rawValue: "team") == nil)
+    }
 }

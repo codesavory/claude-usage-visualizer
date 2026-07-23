@@ -95,7 +95,25 @@ final class UsageViewModel: ObservableObject {
     func refreshOAuthUsage() async {
         let snap = await oauth.refreshIfNeeded()
         liveUsage = snap
-        if let snap { writeUsageCache(snap) }
+        if let snap {
+            syncTierFromLiveUsage(snap)
+            writeUsageCache(snap)
+        }
+    }
+
+    /// Corrects the stored plan tier from the live API. The usage endpoint only
+    /// returns a per-model weekly window on Max plans, so it can tell Pro from
+    /// Max but not Max 5x from Max 20x — the Max sub-tier is left as the user
+    /// set it. Only runs on a live response; a stale or unavailable snapshot
+    /// must never overwrite the setting.
+    private func syncTierFromLiveUsage(_ snap: OAuthUsageSnapshot) {
+        guard snap.status == .live, let settings else { return }
+        let isMax = snap.sevenDayOpus != nil
+        if isMax, settings.tier == .pro {
+            settings.tier = .max5x
+        } else if !isMax, settings.tier != .pro {
+            settings.tier = .pro
+        }
     }
 
     private func writeUsageCache(_ snap: OAuthUsageSnapshot) {

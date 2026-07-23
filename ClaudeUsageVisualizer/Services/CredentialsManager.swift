@@ -30,6 +30,13 @@ actor CredentialsManager {
     private let clientId = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
     private let expiryGracePeriod: TimeInterval = 60
 
+    /// When the last source-keychain bootstrap was attempted. Bootstrapping
+    /// raises a login-password prompt, so it is rate-limited: without this a
+    /// permanently unreadable source (signed out of Claude Code) would re-prompt
+    /// on every poll.
+    private var lastBootstrapAttempt: Date = .distantPast
+    private let bootstrapCooldown: TimeInterval = 3600
+
     enum CredentialError: Error {
         case noCredentials      // biometric store empty and no source fallback
         case userCancelled      // user dismissed the Touch ID / biometric prompt
@@ -96,12 +103,24 @@ actor CredentialsManager {
     ) async throws -> String {
         if let exp = envelope.expiresAt, exp.timeIntervalSince(now) <= expiryGracePeriod {
             guard let refreshToken = envelope.refreshToken else {
-                throw CredentialError.noCredentials
+                return try await bootstrapFromSource(now: now)
             }
-            let refreshed = try await refresh(refreshToken: refreshToken, now: now)
-            persist(refreshed, biometricContext: biometricContext)
-            cache = InMemoryCache(accessToken: refreshed.accessToken, expiresAt: refreshed.expiresAt)
-            return refreshed.accessToken
+            do {
+                let refreshed = try await refresh(refreshToken: refreshToken, now: now)
+                persist(refreshed, biometricContext: biometricContext)
+                cache = InMemoryCache(accessToken: refreshed.accessToken, expiresAt: refreshed.expiresAt)
+                return refreshed.accessToken
+            } catch {
+                // The stored refresh token is dead. Anthropic refresh tokens have
+                // an absolute lifetime (~30 days) on top of per-use rotation, so a
+                // copied credential eventually expires even when every intermediate
+                // refresh succeeded — the endpoint then answers
+                // `invalid_grant / "Refresh token expired"`. Without this recovery
+                // the app is stuck reporting `.unavailable` forever and the UI
+                // silently degrades to local estimates. Re-copy from the source
+                // keychain: one password prompt, then good for another cycle.
+                return try await bootstrapFromSource(now: now)
+            }
         }
         cache = InMemoryCache(accessToken: envelope.accessToken, expiresAt: envelope.expiresAt)
         return envelope.accessToken
@@ -134,10 +153,14 @@ actor CredentialsManager {
         if envelope == nil {
             envelope = try? PlainCredentialStore.read()
         }
-        guard let envelope, let refreshToken = envelope.refreshToken else { return nil }
+        guard let envelope, let refreshToken = envelope.refreshToken else {
+            // Nothing stored at all — re-copy from the source.
+            return try? await bootstrapFromSource(now: .now)
+        }
 
         guard let refreshed = try? await refresh(refreshToken: refreshToken, now: .now) else {
-            return nil
+            // Stored refresh token expired or was revoked; recover from source.
+            return try? await bootstrapFromSource(now: .now)
         }
         persist(refreshed, biometricContext: biometricContext)
         cache = InMemoryCache(accessToken: refreshed.accessToken, expiresAt: refreshed.expiresAt)
@@ -153,6 +176,14 @@ actor CredentialsManager {
     // MARK: - Private
 
     private func bootstrapFromSource(now: Date) async throws -> String {
+        // Bootstrapping raises a login-password prompt, so never do it more than
+        // once an hour. A source that cannot be read (signed out of Claude Code,
+        // user denied the prompt) would otherwise re-prompt on every poll.
+        guard now.timeIntervalSince(lastBootstrapAttempt) >= bootstrapCooldown else {
+            throw CredentialError.noCredentials
+        }
+        lastBootstrapAttempt = now
+
         // This is an LSUIElement (menu-bar) app. A keychain prompt raised while
         // the app is a background accessory gets auto-cancelled by SecurityAgent
         // (errSecUserCanceled / -128) — the user's click never lands. Briefly
