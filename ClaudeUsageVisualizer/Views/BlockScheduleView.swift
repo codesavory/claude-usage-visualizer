@@ -116,7 +116,7 @@ struct BlockScheduleView: View {
                 if secs > 0 {
                     HStack(spacing: 3) {
                         Image(systemName: "arrow.clockwise").font(.caption2).foregroundStyle(.secondary)
-                        Text("resets \(DurationFormatter.compact(secs))")
+                        Text("resets \(DurationFormatter.compact(secs)) · \(DurationFormatter.clockTime(live.fiveHour.resetsAt))")
                             .font(.caption2.weight(.medium)).monospacedDigit().foregroundStyle(.secondary)
                     }
                 }

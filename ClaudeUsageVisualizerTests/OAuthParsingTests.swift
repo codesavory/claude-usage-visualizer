@@ -149,6 +149,48 @@ struct OAuthParsingTests {
     }
 }
 
+@Suite("DurationFormatter clock time")
+struct DurationFormatterClockTests {
+
+    /// Fixed en_US / UTC so the assertions do not depend on the test machine's
+    /// region or time zone.
+    private let calendar: Calendar = {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "UTC")!
+        return c
+    }()
+    private let locale = Locale(identifier: "en_US")
+
+    private func date(hour: Int, minute: Int) -> Date {
+        var comps = DateComponents()
+        comps.year = 2026; comps.month = 7; comps.day = 23
+        comps.hour = hour; comps.minute = minute
+        return calendar.date(from: comps)!
+    }
+
+    @Test func onTheHour_dropsMinutes() {
+        #expect(DurationFormatter.clockTime(date(hour: 21, minute: 0), calendar: calendar, locale: locale) == "9pm")
+        #expect(DurationFormatter.clockTime(date(hour: 9, minute: 0), calendar: calendar, locale: locale) == "9am")
+    }
+
+    @Test func offTheHour_showsMinutes() {
+        #expect(DurationFormatter.clockTime(date(hour: 14, minute: 40), calendar: calendar, locale: locale) == "2:40pm")
+        #expect(DurationFormatter.clockTime(date(hour: 0, minute: 5), calendar: calendar, locale: locale) == "12:05am")
+    }
+
+    /// A 24-hour locale gets 24-hour output; lowercasing is a no-op there.
+    @Test func twentyFourHourLocale_hasNoMeridiem() {
+        let text = DurationFormatter.clockTime(date(hour: 21, minute: 10), calendar: calendar, locale: Locale(identifier: "en_GB"))
+        #expect(text == "21:10")
+    }
+
+    @Test func withWeekday_prefixesDayName() {
+        // 2026-07-23 is a Thursday.
+        let text = DurationFormatter.clockTimeWithWeekday(date(hour: 22, minute: 59), calendar: calendar, locale: locale)
+        #expect(text == "Thu 10:59pm")
+    }
+}
+
 @Suite("UsageTier")
 struct UsageTierTests {
 

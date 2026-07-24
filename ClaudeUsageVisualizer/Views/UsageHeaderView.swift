@@ -18,6 +18,12 @@ struct UsageHeaderView: View {
             return min(1.0, Double(messages) / Double(max(cap, 1)))
         }()
 
+        let resetsAt: Date? = {
+            if let live, live.fiveHour.resetsAt != .distantFuture {
+                return live.fiveHour.resetsAt
+            }
+            return fallbackReset > 0 ? Date().addingTimeInterval(fallbackReset) : nil
+        }()
         let resetSeconds: TimeInterval = {
             if let live, live.fiveHour.resetsAt != .distantFuture {
                 return max(0, live.fiveHour.resetsAt.timeIntervalSince(Date()))
@@ -35,8 +41,8 @@ struct UsageHeaderView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
-                if resetSeconds > 0 {
-                    Text("resets \(DurationFormatter.compact(resetSeconds))")
+                if resetSeconds > 0, let resetsAt {
+                    Text("resets \(DurationFormatter.compact(resetSeconds)) · \(DurationFormatter.clockTime(resetsAt))")
                         .font(.caption)
                         .monospacedDigit()
                         .foregroundStyle(.secondary)

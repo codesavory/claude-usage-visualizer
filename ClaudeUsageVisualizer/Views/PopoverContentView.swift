@@ -82,7 +82,7 @@ struct PopoverContentView: View {
             HStack(spacing: 0) {
                 Text("\(Int((r * 100).rounded()))% weekly")
                 if secs > 0 {
-                    Text(" · resets \(DurationFormatter.daysAndHours(secs))")
+                    Text(" · resets \(DurationFormatter.daysAndHours(secs)) · \(DurationFormatter.clockTimeWithWeekday(week.resetsAt))")
                 }
                 Spacer()
             }
