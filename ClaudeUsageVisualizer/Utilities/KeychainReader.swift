@@ -1,5 +1,6 @@
 import Foundation
 import Security
+import LocalAuthentication
 
 enum KeychainReader {
     struct ClaudeCredentials: Sendable {
@@ -16,14 +17,24 @@ enum KeychainReader {
 
     /// Reads the Claude Code OAuth credentials from the login keychain.
     /// Service = "Claude Code-credentials", account = current username.
-    static func readClaudeCredentials() throws -> ClaudeCredentials {
-        let query: [String: Any] = [
+    ///
+    /// When `allowInteraction` is false the read never raises a prompt: if the
+    /// item's ACL would require user presence the call fails with
+    /// `errSecInteractionNotAllowed` instead. Callers use this for a cheap
+    /// silent probe before falling back to the foregrounded password path.
+    static func readClaudeCredentials(allowInteraction: Bool = true) throws -> ClaudeCredentials {
+        var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: "Claude Code-credentials",
             kSecAttrAccount as String: NSUserName(),
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
         ]
+        if !allowInteraction {
+            let context = LAContext()
+            context.interactionNotAllowed = true
+            query[kSecUseAuthenticationContext as String] = context
+        }
 
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
