@@ -5,11 +5,19 @@ struct PopoverContentView: View {
     @EnvironmentObject var settings: SettingsViewModel
     @ObservedObject var apply: ApplyService
 
+    /// True when the OAuth usage API returned real numbers. Those come from
+    /// Anthropic's servers and are independent of any local `~/.claude/projects`
+    /// transcript, so the popover shows them even with no local session.
+    private var hasLiveUsage: Bool {
+        guard let live = viewModel.liveUsage else { return false }
+        return live.status == .live || live.status == .rateLimited
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             if viewModel.isLoading {
                 loading
-            } else if viewModel.snapshot.currentBlock == nil && viewModel.snapshot.sessions.isEmpty {
+            } else if viewModel.snapshot.currentBlock == nil && viewModel.snapshot.sessions.isEmpty && !hasLiveUsage {
                 OnboardingView()
             } else {
                 content
