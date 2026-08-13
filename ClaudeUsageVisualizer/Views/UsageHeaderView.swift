@@ -115,8 +115,8 @@ struct UsageHeaderView: View {
                 Circle().fill(Color.orange).frame(width: 5, height: 5)
                 Text("cached").font(.caption2).foregroundStyle(.orange)
             }
-        case .unauthorized:
-            Text("sign in to Claude Code").font(.caption2).foregroundStyle(.tertiary)
+        case .unauthorized, .needsLogin:
+            Text("sign in").font(.caption2).foregroundStyle(.tertiary)
         case .stale, .unavailable, .none:
             Text("estimated").font(.caption2).foregroundStyle(.tertiary)
         }

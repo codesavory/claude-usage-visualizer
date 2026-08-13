@@ -13,10 +13,21 @@ struct PopoverContentView: View {
         return live.status == .live || live.status == .rateLimited
     }
 
+    /// True when the widget has no usable token of its own and needs a one-time
+    /// interactive sign-in.
+    private var needsLogin: Bool {
+        switch viewModel.liveUsage?.status {
+        case .needsLogin, .unauthorized: return true
+        default: return false
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             if viewModel.isLoading {
                 loading
+            } else if needsLogin {
+                LoginView()
             } else if viewModel.snapshot.currentBlock == nil && viewModel.snapshot.sessions.isEmpty && !hasLiveUsage {
                 OnboardingView()
             } else {

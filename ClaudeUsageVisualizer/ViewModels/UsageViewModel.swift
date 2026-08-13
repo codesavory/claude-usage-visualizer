@@ -18,6 +18,16 @@ final class UsageViewModel: ObservableObject {
 
     func dismissHabit() { dismissedHabitId = habitSuggestion?.id }
 
+    init() {
+        let creds = CredentialsManager()
+        credentials = creds
+        oauth = OAuthUsageClient(credentials: creds)
+        loginService = OAuthLoginService(credentials: creds)
+        loginService.onSignedIn = { [weak self] in
+            Task { await self?.refreshNow() }
+        }
+    }
+
     let apply = ApplyService()
 
     private let watcher = TranscriptWatcher()
@@ -25,7 +35,14 @@ final class UsageViewModel: ObservableObject {
     private let aggregator = UsageAggregator()
     private let insights = InsightsEngine()
 
-    private let oauth = OAuthUsageClient()
+    /// Shared credential store: the usage client reads the token, the login
+    /// service writes it after a one-time sign-in. Both talk to the same
+    /// app-owned keychain item, so no login-password prompt ever fires.
+    private let credentials: CredentialsManager
+    private let oauth: OAuthUsageClient
+    /// Exposed so the popover can present the sign-in UI.
+    let loginService: OAuthLoginService
+
     private let aiService = AIInsightsServiceWrapper()
     private let habitEngine = HabitEngine()
     let historyStore = UsageHistoryStore()

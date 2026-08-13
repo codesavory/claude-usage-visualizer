@@ -12,6 +12,6 @@ struct OAuthUsageSnapshot: Sendable, Hashable {
     let sevenDayOpus: OAuthUsageWindow?
     let fetchedAt: Date
 
-    enum Staleness: Sendable, Hashable { case live, stale, rateLimited, unauthorized, unavailable }
+    enum Staleness: Sendable, Hashable { case live, stale, rateLimited, unauthorized, unavailable, needsLogin }
     let status: Staleness
 }

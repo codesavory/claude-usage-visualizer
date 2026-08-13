@@ -49,13 +49,18 @@ actor OAuthUsageClient {
         do {
             accessToken = try await credentials.currentAccessToken(now: now)
         } catch {
+            // No stored token (or a dead refresh token) means the user must sign
+            // in once. Surface that distinctly so the UI can offer sign-in
+            // instead of the generic "estimated" fallback.
+            let status: OAuthUsageSnapshot.Staleness =
+                (error as? CredentialsManager.CredentialError) == .needsLogin ? .needsLogin : .unavailable
             cached = OAuthUsageSnapshot(
                 fiveHour: OAuthUsageWindow(utilization: 0, resetsAt: .distantFuture),
                 sevenDay: OAuthUsageWindow(utilization: 0, resetsAt: .distantFuture),
                 sevenDaySonnet: nil,
                 sevenDayOpus: nil,
                 fetchedAt: now,
-                status: .unavailable
+                status: status
             )
             return cached
         }

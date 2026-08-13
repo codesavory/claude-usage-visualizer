@@ -25,12 +25,14 @@
 		55F05C5BE3C18C63EB785E87 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF92FE21057CEE14D0818BE7 /* Theme.swift */; };
 		57B04D1B86F9C7462DA64F5A /* SessionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4768B69E3299A7EED98E2F27 /* SessionListView.swift */; };
 		592876F08D2DF56A8CA6B103 /* ApplyConfirmSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C34090F0D90D8FEBD6C974E /* ApplyConfirmSheet.swift */; };
+		5E128F4E40D04A02D4E320E5 /* OAuthEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C59B0E90B28FA35D5AA97F /* OAuthEndpoint.swift */; };
 		601B14F418BC2B0BBC804B68 /* TranscriptWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = D78F1A4CF6F26375056D2547 /* TranscriptWatcher.swift */; };
 		60E444A85AF948733A98D5C4 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D2C0DC9F3ED830856784394 /* AppDelegate.swift */; };
 		67654949526958393CAAC7F8 /* ModelBreakdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41777F94FDC76E7D8D243616 /* ModelBreakdownView.swift */; };
 		6A1A38B5B63D8980F8EC5689 /* TokenFormatterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CE18D81B39B6FF2C2CFED5F /* TokenFormatterTests.swift */; };
 		7018B118E439652222A7891A /* BurnRateGauge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D7F80E907217766EE0F0D4C /* BurnRateGauge.swift */; };
 		741EE4C7308DB0DBE405653A /* SessionInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84089CCE31DAE28ABEFDAAF8 /* SessionInfo.swift */; };
+		7BFB550C51F6DE282C7DCD6D /* OAuthLoginService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF64D9D3E2880AED1B94555A /* OAuthLoginService.swift */; };
 		7E053F5890CFE17BFCA98E62 /* PopoverContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5E536B9AD1848F168217108 /* PopoverContentView.swift */; };
 		82F502A1107B65C6F9C197A0 /* UsagePersonality.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD574ACB9A0004F70B543F3C /* UsagePersonality.swift */; };
 		85D554C453FDFECDFDAF2D81 /* OAuthUsageSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 724AB0C2E120AC2E64D8663B /* OAuthUsageSnapshot.swift */; };
@@ -44,6 +46,7 @@
 		A56EE367303006AA7B944D19 /* UsageHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3748114B6A00EC2BFC380C89 /* UsageHeaderView.swift */; };
 		A601E32AFA1C7D177B8F543A /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E325C01EC8F47C38EA4EA03 /* SettingsViewModel.swift */; };
 		B4C503D74BABD4DDF40D57DE /* SessionRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 735B90E385CB6B15A0A9661B /* SessionRowView.swift */; };
+		B53D4B04D69772EFB87569FE /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6E936128E414AD7FAC2BCED /* LoginView.swift */; };
 		B7435BCC3399F1E6F33AFE73 /* OAuthUsageClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8514795C819CAF4C00A46F1 /* OAuthUsageClient.swift */; };
 		B9833ABBDCE96D00F2839D45 /* FSEventStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE09CB9F6F6F69F1FC417B71 /* FSEventStream.swift */; };
 		C4CF3F1CF4142680B7FC173A /* SessionRegistryDedupeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB5D4DA30C8B325B57041CFD /* SessionRegistryDedupeTests.swift */; };
@@ -117,12 +120,15 @@
 		BA74F19012CC461939ECF3A4 /* OAuthParsingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuthParsingTests.swift; sourceTree = "<group>"; };
 		BB5D4DA30C8B325B57041CFD /* SessionRegistryDedupeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRegistryDedupeTests.swift; sourceTree = "<group>"; };
 		C06236EA13B0EA5B6E8F6E94 /* ClaudeUsageVisualizer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ClaudeUsageVisualizer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C0C59B0E90B28FA35D5AA97F /* OAuthEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuthEndpoint.swift; sourceTree = "<group>"; };
 		C3B68DDF7898BA16177A5F29 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		C5629308908FF2037E3E06FE /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
 		C5E536B9AD1848F168217108 /* PopoverContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopoverContentView.swift; sourceTree = "<group>"; };
+		C6E936128E414AD7FAC2BCED /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		C8514795C819CAF4C00A46F1 /* OAuthUsageClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuthUsageClient.swift; sourceTree = "<group>"; };
 		CF37D9DC2255AAF4AC7B3C57 /* BurnRateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BurnRateTests.swift; sourceTree = "<group>"; };
 		D78F1A4CF6F26375056D2547 /* TranscriptWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptWatcher.swift; sourceTree = "<group>"; };
+		DF64D9D3E2880AED1B94555A /* OAuthLoginService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuthLoginService.swift; sourceTree = "<group>"; };
 		E2BEAC5304E1C346B7CD8C03 /* BiometricCredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricCredentialStore.swift; sourceTree = "<group>"; };
 		E4BF5EC91F7D4A5F71E38EA3 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		EA746A58C27571899AC8BFE9 /* CredentialsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialsManager.swift; sourceTree = "<group>"; };
@@ -166,6 +172,8 @@
 				01CC9B131C842E2D1CEC3FC0 /* HabitEngine.swift */,
 				699C306F64F567C7ECB3EF30 /* InsightsEngine.swift */,
 				82F1A2D20F5CD05B6348F14D /* NudgeScheduler.swift */,
+				C0C59B0E90B28FA35D5AA97F /* OAuthEndpoint.swift */,
+				DF64D9D3E2880AED1B94555A /* OAuthLoginService.swift */,
 				C8514795C819CAF4C00A46F1 /* OAuthUsageClient.swift */,
 				F4899A6506715E7935842E4A /* SessionRegistry.swift */,
 				D78F1A4CF6F26375056D2547 /* TranscriptWatcher.swift */,
@@ -253,6 +261,7 @@
 				4D7F80E907217766EE0F0D4C /* BurnRateGauge.swift */,
 				9A4823F1F164A42A954A2410 /* HabitSuggestionView.swift */,
 				C5629308908FF2037E3E06FE /* InsightsView.swift */,
+				C6E936128E414AD7FAC2BCED /* LoginView.swift */,
 				41777F94FDC76E7D8D243616 /* ModelBreakdownView.swift */,
 				E4BF5EC91F7D4A5F71E38EA3 /* OnboardingView.swift */,
 				C5E536B9AD1848F168217108 /* PopoverContentView.swift */,
@@ -396,9 +405,12 @@
 				EF925DA30744920C6FFA5C12 /* InsightsView.swift in Sources */,
 				DDA74A506E2FB2458928B868 /* JSONLStreamReader.swift in Sources */,
 				F6476630FA30AD956F205EE6 /* KeychainReader.swift in Sources */,
+				B53D4B04D69772EFB87569FE /* LoginView.swift in Sources */,
 				67654949526958393CAAC7F8 /* ModelBreakdownView.swift in Sources */,
 				32E12634DB9D5185F599BC58 /* ModelPricing.swift in Sources */,
 				167599FFACA6A0E7F6E29A4E /* NudgeScheduler.swift in Sources */,
+				5E128F4E40D04A02D4E320E5 /* OAuthEndpoint.swift in Sources */,
+				7BFB550C51F6DE282C7DCD6D /* OAuthLoginService.swift in Sources */,
 				B7435BCC3399F1E6F33AFE73 /* OAuthUsageClient.swift in Sources */,
 				85D554C453FDFECDFDAF2D81 /* OAuthUsageSnapshot.swift in Sources */,
 				C73AE2923AA5FE3881DDCB04 /* OnboardingView.swift in Sources */,

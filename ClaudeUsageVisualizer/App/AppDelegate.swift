@@ -12,6 +12,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var cancellables: Set<AnyCancellable> = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // One-time migration to the independent-OAuth architecture. Older builds
+        // copied Claude Code's SHARED token into these stores; that token must
+        // never be refreshed by us (it would rotate Claude Code's session). Wipe
+        // the copies once so the widget starts clean and signs in with its own
+        // grant instead.
+        let migrationKey = "didMigrateToIndependentOAuth"
+        if !UserDefaults.standard.bool(forKey: migrationKey) {
+            BiometricCredentialStore.delete()
+            PlainCredentialStore.delete()
+            UserDefaults.standard.set(true, forKey: migrationKey)
+        }
+
         // Enforce single instance: terminate any older copy that's already running.
         let bundleId = Bundle.main.bundleIdentifier ?? ""
         let others = NSRunningApplication.runningApplications(withBundleIdentifier: bundleId)
@@ -31,6 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             rootView: PopoverContentView(apply: usageViewModel.apply)
                 .environmentObject(usageViewModel)
                 .environmentObject(settingsViewModel)
+                .environmentObject(usageViewModel.loginService)
         )
 
         // Reflect live state into the menu bar (icon-only, no text)
