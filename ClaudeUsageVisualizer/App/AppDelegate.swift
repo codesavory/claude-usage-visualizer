@@ -20,8 +20,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let migrationKey = "didMigrateToIndependentOAuth"
         if !UserDefaults.standard.bool(forKey: migrationKey) {
             BiometricCredentialStore.delete()
-            PlainCredentialStore.delete()
             UserDefaults.standard.set(true, forKey: migrationKey)
+        }
+
+        // Second migration: the token moved OUT of the Keychain into a plain
+        // 0600 file, because a login-keychain item re-prompts for the password
+        // whenever this self-signed app is rebuilt (its signature drops out of
+        // the item's ACL). Purge the orphaned keychain items once. SecItemDelete
+        // reads only attributes, not data, so it never triggers the prompt.
+        let fileStoreKey = "didMigrateToFileStore"
+        if !UserDefaults.standard.bool(forKey: fileStoreKey) {
+            LegacyKeychainCleanup.purge()
+            UserDefaults.standard.set(true, forKey: fileStoreKey)
         }
 
         // Enforce single instance: terminate any older copy that's already running.

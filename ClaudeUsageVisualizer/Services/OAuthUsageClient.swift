@@ -27,6 +27,13 @@ actor OAuthUsageClient {
     /// Returns the last-known snapshot. Does not trigger a network call.
     func lastKnown() -> OAuthUsageSnapshot? { cached }
 
+    /// Seeds the in-memory cache from a persisted snapshot at launch, so a failed
+    /// first poll (e.g. the token needs a re-sign-in) preserves the last-known
+    /// numbers instead of blanking out. Only fills an empty cache.
+    func seed(_ snapshot: OAuthUsageSnapshot) {
+        if cached == nil { cached = snapshot }
+    }
+
     /// Fetches if the cache is empty or older than TTL. Safe to call frequently.
     func refreshIfNeeded(now: Date = .now) async -> OAuthUsageSnapshot? {
         if let cached, now.timeIntervalSince(cached.fetchedAt) < defaultTTL {
@@ -49,19 +56,32 @@ actor OAuthUsageClient {
         do {
             accessToken = try await credentials.currentAccessToken(now: now)
         } catch {
-            // No stored token (or a dead refresh token) means the user must sign
-            // in once. Surface that distinctly so the UI can offer sign-in
-            // instead of the generic "estimated" fallback.
+            // No usable token. A genuinely dead refresh token surfaces as
+            // `needsLogin` so the UI can offer sign-in; anything transient stays
+            // `unavailable`. Either way, if we already hold real numbers (seeded
+            // from disk or a prior live poll), keep them and only mark the
+            // freshness — never blank out to a sign-in wall over a lapse.
             let status: OAuthUsageSnapshot.Staleness =
                 (error as? CredentialsManager.CredentialError) == .needsLogin ? .needsLogin : .unavailable
-            cached = OAuthUsageSnapshot(
-                fiveHour: OAuthUsageWindow(utilization: 0, resetsAt: .distantFuture),
-                sevenDay: OAuthUsageWindow(utilization: 0, resetsAt: .distantFuture),
-                sevenDaySonnet: nil,
-                sevenDayOpus: nil,
-                fetchedAt: now,
-                status: status
-            )
+            if let prior = cached, prior.hasRealNumbers {
+                cached = OAuthUsageSnapshot(
+                    fiveHour: prior.fiveHour,
+                    sevenDay: prior.sevenDay,
+                    sevenDaySonnet: prior.sevenDaySonnet,
+                    sevenDayOpus: prior.sevenDayOpus,
+                    fetchedAt: prior.fetchedAt,
+                    status: status
+                )
+            } else {
+                cached = OAuthUsageSnapshot(
+                    fiveHour: OAuthUsageWindow(utilization: 0, resetsAt: .distantFuture),
+                    sevenDay: OAuthUsageWindow(utilization: 0, resetsAt: .distantFuture),
+                    sevenDaySonnet: nil,
+                    sevenDayOpus: nil,
+                    fetchedAt: now,
+                    status: status
+                )
+            }
             return cached
         }
 

@@ -3,6 +3,7 @@ import SwiftUI
 struct PopoverContentView: View {
     @EnvironmentObject var viewModel: UsageViewModel
     @EnvironmentObject var settings: SettingsViewModel
+    @EnvironmentObject var login: OAuthLoginService
     @ObservedObject var apply: ApplyService
 
     /// True when the OAuth usage API returned real numbers. Those come from
@@ -22,13 +23,29 @@ struct PopoverContentView: View {
         }
     }
 
+    /// True when we hold real usage numbers (seeded from disk or a prior live
+    /// poll), even if the current status is stale/needsLogin. Keeps the popover
+    /// on the usage view instead of a full-screen sign-in wall.
+    private var hasLastKnownUsage: Bool {
+        viewModel.liveUsage?.hasRealNumbers == true
+    }
+
+    /// True while an interactive sign-in is underway (browser opened, awaiting the
+    /// pasted code). The paste step lives in `LoginView`, so show it then.
+    private var signingIn: Bool {
+        switch login.phase {
+        case .awaitingCode, .exchanging, .failed: return true
+        default: return false
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             if viewModel.isLoading {
                 loading
-            } else if needsLogin {
+            } else if signingIn || (needsLogin && !hasLastKnownUsage) {
                 LoginView()
-            } else if viewModel.snapshot.currentBlock == nil && viewModel.snapshot.sessions.isEmpty && !hasLiveUsage {
+            } else if viewModel.snapshot.currentBlock == nil && viewModel.snapshot.sessions.isEmpty && !hasLiveUsage && !hasLastKnownUsage {
                 OnboardingView()
             } else {
                 content
@@ -62,6 +79,10 @@ struct PopoverContentView: View {
 
     private var content: some View {
         VStack(spacing: Theme.sectionSpacing) {
+            if needsLogin {
+                signInBanner
+            }
+
             UsageHeaderView()
 
             Divider()
@@ -81,6 +102,33 @@ struct PopoverContentView: View {
             )
         }
         .padding(Theme.popoverPadding)
+    }
+
+    /// Non-blocking sign-in prompt shown above the numbers when the grant has
+    /// lapsed. The numbers stay visible (marked stale); tapping starts the
+    /// one-time re-sign-in, which then switches to `LoginView` for the paste step.
+    private var signInBanner: some View {
+        Button {
+            login.beginLogin()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "person.badge.key.fill")
+                Text("Signed out — numbers may be stale.")
+                    .font(.caption2)
+                Spacer()
+                Text("Sign in")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.tint)
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.secondary.opacity(0.10))
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder

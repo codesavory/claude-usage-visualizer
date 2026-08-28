@@ -134,63 +134,62 @@ enum BiometricCredentialStore {
     }
 }
 
-/// Fallback app-owned credential store with NO biometry gate. Used only when
-/// Touch ID is unavailable or the biometric write fails. Because the item is
-/// owned by this app (created by it), reads never prompt for a password. Its
-/// only job is to guarantee the source `Claude Code-credentials` item is read
-/// at most once ever, so the login-password prompt can never recur.
+/// App-owned credential store backed by a plain `0600` file in Application
+/// Support — deliberately NOT the Keychain.
+///
+/// A login-keychain item's ACL is bound to the creating app's code signature.
+/// This widget is self-signed and rebuilt often, so every rebuild re-signs it,
+/// drops it out of its own item's ACL, and macOS prompts for the login-keychain
+/// password on the next read. That prompt is exactly what this store exists to
+/// kill, and the Keychain fundamentally cannot avoid it here. A plain file read
+/// never prompts, across any number of rebuilds.
+///
+/// Trade-off: the OAuth token now sits in plaintext in the user's home dir
+/// (mode 0600, so not readable by other users) instead of the encrypted
+/// Keychain. For a local personal menu-bar widget holding a usage-scoped token,
+/// that is the accepted cost of never seeing the password prompt again. Same
+/// trust model as Claude Code's own `~/.claude/.credentials.json` fallback.
 enum PlainCredentialStore {
-    static let service = "dev.claudeusagevisualizer.credentials.plain"
-    static let account = "oauth"
+    private static var fileURL: URL {
+        let base = FileManager.default
+            .urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let dir = base.appendingPathComponent("ClaudeUsageVisualizer", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("credentials.json")
+    }
 
     static func read() throws -> BiometricCredentialStore.Envelope {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
-        var item: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &item)
-        switch status {
-        case errSecSuccess: break
-        case errSecItemNotFound: throw BiometricCredentialStore.StoreError.notFound
-        default: throw BiometricCredentialStore.StoreError.osStatus(status)
-        }
-        guard let data = item as? Data else { throw BiometricCredentialStore.StoreError.decodeFailed }
-        do { return try JSONDecoder.cuv.decode(BiometricCredentialStore.Envelope.self, from: data) }
-        catch { throw BiometricCredentialStore.StoreError.decodeFailed }
+        let data = try Data(contentsOf: fileURL)   // throws when the file is absent
+        return try JSONDecoder.cuv.decode(BiometricCredentialStore.Envelope.self, from: data)
     }
 
     static func write(_ envelope: BiometricCredentialStore.Envelope) throws {
         let data = try JSONEncoder.cuv.encode(envelope)
-        let base: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-        ]
-        let updateStatus = SecItemUpdate(base as CFDictionary, [kSecValueData as String: data] as CFDictionary)
-        if updateStatus == errSecSuccess { return }
-        if updateStatus != errSecItemNotFound {
-            throw BiometricCredentialStore.StoreError.osStatus(updateStatus)
-        }
-        var add = base
-        add[kSecValueData as String] = data
-        add[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-        let addStatus = SecItemAdd(add as CFDictionary, nil)
-        if addStatus != errSecSuccess {
-            throw BiometricCredentialStore.StoreError.osStatus(addStatus)
-        }
+        let url = fileURL
+        try data.write(to: url, options: [.atomic])
+        // Owner read/write only.
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
     }
 
     static func delete() {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-        ]
-        SecItemDelete(query as CFDictionary)
+        try? FileManager.default.removeItem(at: fileURL)
+    }
+}
+
+/// One-time cleanup of the abandoned login-keychain items from the old
+/// Keychain-backed design. `SecItemDelete` needs only the item's attributes,
+/// not its data, so it does not trigger the login-password prompt.
+enum LegacyKeychainCleanup {
+    static func purge() {
+        for service in ["dev.claudeusagevisualizer.credentials",
+                        "dev.claudeusagevisualizer.credentials.plain"] {
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: service,
+                kSecAttrAccount as String: "oauth",
+            ]
+            SecItemDelete(query as CFDictionary)
+        }
     }
 }
 

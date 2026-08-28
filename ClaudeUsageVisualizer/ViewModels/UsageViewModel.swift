@@ -59,6 +59,15 @@ final class UsageViewModel: ObservableObject {
     func start(settings: SettingsViewModel) async {
         self.settings = settings
         isLoading = true
+
+        // Seed last-known usage from disk so the popover shows numbers the moment
+        // it opens — before the first poll, and even if that poll fails because
+        // the grant lapsed. Keeps the widget on the usage view instead of a
+        // full-screen sign-in wall whenever real numbers were ever fetched.
+        if let seeded = UsageSnapshotStore.load() {
+            liveUsage = seeded
+            await oauth.seed(seeded)
+        }
         await aggregator.updateThresholds(
             warm: settings.burnWarmThreshold,
             hot: settings.burnHotThreshold,
@@ -114,7 +123,13 @@ final class UsageViewModel: ObservableObject {
         liveUsage = snap
         if let snap {
             syncTierFromLiveUsage(snap)
-            writeUsageCache(snap)
+            // Only persist a genuine reading. A `needsLogin`/`unavailable` snapshot
+            // carries placeholder numbers (or a preserved-but-stale copy); writing
+            // it would clobber the last-known-good usage on disk.
+            if snap.status == .live || snap.status == .rateLimited {
+                writeUsageCache(snap)
+                UsageSnapshotStore.save(snap)
+            }
         }
     }
 

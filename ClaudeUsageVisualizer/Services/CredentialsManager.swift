@@ -25,7 +25,8 @@ actor CredentialsManager {
     private let expiryGracePeriod: TimeInterval = 60
 
     enum CredentialError: Error, Equatable {
-        case needsLogin   // no stored token, or the refresh token is no longer valid
+        case needsLogin              // no stored token, or the refresh token is genuinely dead
+        case temporarilyUnavailable // a transient refresh failure; the stored token is still good
     }
 
     init() {}
@@ -107,8 +108,15 @@ actor CredentialsManager {
             cache = InMemoryCache(accessToken: token.accessToken, expiresAt: token.expiresAt)
             return token.accessToken
         } catch {
-            // A dead refresh token means the user must sign in again.
-            throw CredentialError.needsLogin
+            // Only a genuine invalid_grant (HTTP 400/401 from the token endpoint)
+            // means the refresh token is dead and the user must sign in again.
+            // A network blip, 429, or 5xx is transient: the stored token is still
+            // valid, so report it as temporary and keep retrying — never slam the
+            // UI to the sign-in wall over a hiccup.
+            if case OAuthEndpoint.EndpointError.http(let code) = error, code == 400 || code == 401 {
+                throw CredentialError.needsLogin
+            }
+            throw CredentialError.temporarilyUnavailable
         }
     }
 }
