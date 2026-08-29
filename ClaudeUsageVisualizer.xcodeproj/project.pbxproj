@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		02506A79081B1E205458B11B /* OAuthUsageSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 724AB0C2E120AC2E64D8663B /* OAuthUsageSnapshot.swift */; };
+		03D055855B69C284588EB533 /* IOSUsageViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B38D38960624B8032D296C51 /* IOSUsageViewModel.swift */; };
 		0449A116AEE7CDE013C9F809 /* BreakNudgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93411072A1A56FC2BC168151 /* BreakNudgeView.swift */; };
 		09A75EF28C5D2DD4C649042A /* OAuthParsingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA74F19012CC461939ECF3A4 /* OAuthParsingTests.swift */; };
 		0AC7159B0F2FF6BD0E20D6A0 /* ApplyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 014C3CE41BEFEAE862D4AA16 /* ApplyService.swift */; };
@@ -16,13 +18,17 @@
 		1784D1407103F65BA4A89F1E /* UsageViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05D7CBB8BF6C4F12C3A052BF /* UsageViewModel.swift */; };
 		1DA1D502BBE4E8AD5DF4EAB6 /* BurnRateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF37D9DC2255AAF4AC7B3C57 /* BurnRateTests.swift */; };
 		29557BE3924D0AC417DDC4EB /* HabitEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01CC9B131C842E2D1CEC3FC0 /* HabitEngine.swift */; };
+		2AE4B958A66133FE55964B7B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7D08C09682AA38ADDC8E191 /* ContentView.swift */; };
 		32E12634DB9D5185F599BC58 /* ModelPricing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 125AFEB980D5B46B7B5B2BF5 /* ModelPricing.swift */; };
 		352353405DB101D4C6E46F07 /* WeeklyUsageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F1B4FB198E9F461FC2A900A /* WeeklyUsageView.swift */; };
+		3B80021C47339DE7A84DA1E9 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E38AD7FE73244F6C197518A /* App.swift */; };
 		40B775AFB2C9E5F20D7D030B /* DurationFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71F4B569CD86845BB9B4BD13 /* DurationFormatter.swift */; };
+		475A81A15F611F3AB18CD6EB /* OAuthUsageClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8514795C819CAF4C00A46F1 /* OAuthUsageClient.swift */; };
 		4787496B91E0C66EAC8FC270 /* ClaudeUsageVisualizerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D82AD73DC1BADEB889F7D5A /* ClaudeUsageVisualizerApp.swift */; };
 		48D5E15E824719AE9AF1DAFE /* DurationFormatterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72AA424AD4A7326F9088B26 /* DurationFormatterTests.swift */; };
 		507FB40F810A93203ADD3C82 /* UsageHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 084D5803B1AA49935841392D /* UsageHistoryStore.swift */; };
 		55F05C5BE3C18C63EB785E87 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF92FE21057CEE14D0818BE7 /* Theme.swift */; };
+		56B7C0604F5D701F1DB440F6 /* CredentialsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA746A58C27571899AC8BFE9 /* CredentialsManager.swift */; };
 		57B04D1B86F9C7462DA64F5A /* SessionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4768B69E3299A7EED98E2F27 /* SessionListView.swift */; };
 		592876F08D2DF56A8CA6B103 /* ApplyConfirmSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C34090F0D90D8FEBD6C974E /* ApplyConfirmSheet.swift */; };
 		5E128F4E40D04A02D4E320E5 /* OAuthEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C59B0E90B28FA35D5AA97F /* OAuthEndpoint.swift */; };
@@ -45,12 +51,15 @@
 		9F133CCD4B6E87A23093AEFE /* ProcessLiveness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17467672FAF801F214D2188E /* ProcessLiveness.swift */; };
 		A56EE367303006AA7B944D19 /* UsageHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3748114B6A00EC2BFC380C89 /* UsageHeaderView.swift */; };
 		A601E32AFA1C7D177B8F543A /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E325C01EC8F47C38EA4EA03 /* SettingsViewModel.swift */; };
+		B4152ED0933CA5C82F684ED8 /* OAuthLoginService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF64D9D3E2880AED1B94555A /* OAuthLoginService.swift */; };
 		B4C503D74BABD4DDF40D57DE /* SessionRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 735B90E385CB6B15A0A9661B /* SessionRowView.swift */; };
 		B53D4B04D69772EFB87569FE /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6E936128E414AD7FAC2BCED /* LoginView.swift */; };
 		B7435BCC3399F1E6F33AFE73 /* OAuthUsageClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8514795C819CAF4C00A46F1 /* OAuthUsageClient.swift */; };
 		B9833ABBDCE96D00F2839D45 /* FSEventStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE09CB9F6F6F69F1FC417B71 /* FSEventStream.swift */; };
+		C0DB097F4482CC3EF0203DCD /* OAuthEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C59B0E90B28FA35D5AA97F /* OAuthEndpoint.swift */; };
 		C4CF3F1CF4142680B7FC173A /* SessionRegistryDedupeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB5D4DA30C8B325B57041CFD /* SessionRegistryDedupeTests.swift */; };
 		C4D6B57238A2ABE47628A603 /* OptimizationSuggestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FEBDA63A327A42B7F88C16B /* OptimizationSuggestion.swift */; };
+		C536D8FC82AC9E46B785C7E9 /* BiometricCredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2BEAC5304E1C346B7CD8C03 /* BiometricCredentialStore.swift */; };
 		C73AE2923AA5FE3881DDCB04 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4BF5EC91F7D4A5F71E38EA3 /* OnboardingView.swift */; };
 		CB3DB121BBD2E3A31227CEEA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B78D8474B61E54BC7EAD9247 /* Assets.xcassets */; };
 		CED451040CE8CD259C561A82 /* BreakNudge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F4C1391F71D6E2E83FB6178 /* BreakNudge.swift */; };
@@ -108,6 +117,7 @@
 		800A96FA476D1E0B8347D1FD /* UsageAggregator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageAggregator.swift; sourceTree = "<group>"; };
 		82F1A2D20F5CD05B6348F14D /* NudgeScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NudgeScheduler.swift; sourceTree = "<group>"; };
 		84089CCE31DAE28ABEFDAAF8 /* SessionInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionInfo.swift; sourceTree = "<group>"; };
+		8E38AD7FE73244F6C197518A /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		8F1B4FB198E9F461FC2A900A /* WeeklyUsageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyUsageView.swift; sourceTree = "<group>"; };
 		93411072A1A56FC2BC168151 /* BreakNudgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakNudgeView.swift; sourceTree = "<group>"; };
 		9A4823F1F164A42A954A2410 /* HabitSuggestionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitSuggestionView.swift; sourceTree = "<group>"; };
@@ -116,6 +126,7 @@
 		AD574ACB9A0004F70B543F3C /* UsagePersonality.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsagePersonality.swift; sourceTree = "<group>"; };
 		AE09CB9F6F6F69F1FC417B71 /* FSEventStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FSEventStream.swift; sourceTree = "<group>"; };
 		B2D665C8F5F4D92F8CF969D0 /* TokenFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenFormatter.swift; sourceTree = "<group>"; };
+		B38D38960624B8032D296C51 /* IOSUsageViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSUsageViewModel.swift; sourceTree = "<group>"; };
 		B78D8474B61E54BC7EAD9247 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BA74F19012CC461939ECF3A4 /* OAuthParsingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuthParsingTests.swift; sourceTree = "<group>"; };
 		BB5D4DA30C8B325B57041CFD /* SessionRegistryDedupeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRegistryDedupeTests.swift; sourceTree = "<group>"; };
@@ -127,12 +138,14 @@
 		C6E936128E414AD7FAC2BCED /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		C8514795C819CAF4C00A46F1 /* OAuthUsageClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuthUsageClient.swift; sourceTree = "<group>"; };
 		CF37D9DC2255AAF4AC7B3C57 /* BurnRateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BurnRateTests.swift; sourceTree = "<group>"; };
+		D48D87EE06191E8445DAE745 /* ClaudeUsageVisualizerIOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ClaudeUsageVisualizerIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D78F1A4CF6F26375056D2547 /* TranscriptWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptWatcher.swift; sourceTree = "<group>"; };
 		DF64D9D3E2880AED1B94555A /* OAuthLoginService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OAuthLoginService.swift; sourceTree = "<group>"; };
 		E2BEAC5304E1C346B7CD8C03 /* BiometricCredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricCredentialStore.swift; sourceTree = "<group>"; };
 		E4BF5EC91F7D4A5F71E38EA3 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		EA746A58C27571899AC8BFE9 /* CredentialsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialsManager.swift; sourceTree = "<group>"; };
 		F4899A6506715E7935842E4A /* SessionRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRegistry.swift; sourceTree = "<group>"; };
+		F7D08C09682AA38ADDC8E191 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		FA6C492B533BBF07B2D28136 /* UsageBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageBlock.swift; sourceTree = "<group>"; };
 		FF92FE21057CEE14D0818BE7 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -142,6 +155,7 @@
 			isa = PBXGroup;
 			children = (
 				70A6FFAB9470FFCCE2E0EF2D /* ClaudeUsageVisualizer */,
+				665ECFDED1BD17722B1A2223 /* ClaudeUsageVisualizerIOS */,
 				97ADAFEF816F1F3B95C14BD0 /* ClaudeUsageVisualizerTests */,
 				B82B9F3D049EE2811FB3F340 /* Products */,
 			);
@@ -181,6 +195,16 @@
 				084D5803B1AA49935841392D /* UsageHistoryStore.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		665ECFDED1BD17722B1A2223 /* ClaudeUsageVisualizerIOS */ = {
+			isa = PBXGroup;
+			children = (
+				8E38AD7FE73244F6C197518A /* App.swift */,
+				F7D08C09682AA38ADDC8E191 /* ContentView.swift */,
+				B38D38960624B8032D296C51 /* IOSUsageViewModel.swift */,
+			);
+			path = ClaudeUsageVisualizerIOS;
 			sourceTree = "<group>";
 		};
 		70A6FFAB9470FFCCE2E0EF2D /* ClaudeUsageVisualizer */ = {
@@ -247,6 +271,7 @@
 			isa = PBXGroup;
 			children = (
 				C06236EA13B0EA5B6E8F6E94 /* ClaudeUsageVisualizer.app */,
+				D48D87EE06191E8445DAE745 /* ClaudeUsageVisualizerIOS.app */,
 				177DC6CC517ED29C47AB4E34 /* ClaudeUsageVisualizerTests.xctest */,
 			);
 			name = Products;
@@ -322,6 +347,23 @@
 			productReference = 177DC6CC517ED29C47AB4E34 /* ClaudeUsageVisualizerTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		C4FDCF347AF597DF466DF0C6 /* ClaudeUsageVisualizerIOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 034C807D4F538DD2456B8F6E /* Build configuration list for PBXNativeTarget "ClaudeUsageVisualizerIOS" */;
+			buildPhases = (
+				DB695402DDC14388F4D726D5 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ClaudeUsageVisualizerIOS;
+			packageProductDependencies = (
+			);
+			productName = ClaudeUsageVisualizerIOS;
+			productReference = D48D87EE06191E8445DAE745 /* ClaudeUsageVisualizerIOS.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -334,6 +376,10 @@
 					60D032F022D60B12176D4B0D = {
 						DevelopmentTeam = "";
 						ProvisioningStyle = Manual;
+					};
+					C4FDCF347AF597DF466DF0C6 = {
+						DevelopmentTeam = C9BQ4L3K7L;
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -352,6 +398,7 @@
 			projectRoot = "";
 			targets = (
 				60D032F022D60B12176D4B0D /* ClaudeUsageVisualizer */,
+				C4FDCF347AF597DF466DF0C6 /* ClaudeUsageVisualizerIOS */,
 				70F69F533B269BA4845D0C6E /* ClaudeUsageVisualizerTests */,
 			);
 		};
@@ -438,6 +485,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DB695402DDC14388F4D726D5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3B80021C47339DE7A84DA1E9 /* App.swift in Sources */,
+				C536D8FC82AC9E46B785C7E9 /* BiometricCredentialStore.swift in Sources */,
+				2AE4B958A66133FE55964B7B /* ContentView.swift in Sources */,
+				56B7C0604F5D701F1DB440F6 /* CredentialsManager.swift in Sources */,
+				03D055855B69C284588EB533 /* IOSUsageViewModel.swift in Sources */,
+				C0DB097F4482CC3EF0203DCD /* OAuthEndpoint.swift in Sources */,
+				B4152ED0933CA5C82F684ED8 /* OAuthLoginService.swift in Sources */,
+				475A81A15F611F3AB18CD6EB /* OAuthUsageClient.swift in Sources */,
+				02506A79081B1E205458B11B /* OAuthUsageSnapshot.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -500,12 +563,12 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -557,11 +620,11 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
@@ -660,9 +723,66 @@
 			};
 			name = Release;
 		};
+		DC4283AC60FA5F5BEEC7EBC5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = C9BQ4L3K7L;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.claudeusagevisualizer.ios;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		FBF45F1287F97FEFB306494A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = C9BQ4L3K7L;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.claudeusagevisualizer.ios;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		034C807D4F538DD2456B8F6E /* Build configuration list for PBXNativeTarget "ClaudeUsageVisualizerIOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DC4283AC60FA5F5BEEC7EBC5 /* Debug */,
+				FBF45F1287F97FEFB306494A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		15AB6FEB9358ADB44ECB4EDD /* Build configuration list for PBXNativeTarget "ClaudeUsageVisualizer" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

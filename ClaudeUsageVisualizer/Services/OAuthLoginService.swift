@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import SwiftUI
 
 /// Drives the one-time interactive sign-in: opens the browser to Anthropic's
@@ -36,7 +40,12 @@ final class OAuthLoginService: ObservableObject {
         let state = UUID().uuidString
         self.verifier = verifier
         self.expectedState = state
-        NSWorkspace.shared.open(OAuthEndpoint.authorizeURL(challenge: challenge, state: state))
+        let url = OAuthEndpoint.authorizeURL(challenge: challenge, state: state)
+        #if os(macOS)
+        NSWorkspace.shared.open(url)
+        #else
+        UIApplication.shared.open(url)
+        #endif
         phase = .awaitingCode
     }
 
