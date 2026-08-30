@@ -1,20 +1,24 @@
 import Foundation
 
-/// Single source of truth for the OAuth access token used by `OAuthUsageClient`.
+/// Source of the OAuth access token used by `OAuthUsageClient`.
 ///
-/// Re-architected: the token is the widget's OWN grant, obtained via
-/// `OAuthLoginService` (interactive sign-in) and stored in the app-owned
-/// `PlainCredentialStore`. The app created that keychain item, so reading it is
-/// always silent — no login-password prompt, no Touch ID. Because the grant is
-/// independent of Claude Code, the widget refreshes it freely without ever
-/// touching (or invalidating) the CLI's session.
+/// macOS: reads Claude Code's own token straight from its login-keychain item
+/// (`Claude Code-credentials`). Claude Code keeps that token refreshed on its
+/// own and it carries the `user:profile` scope the usage endpoint requires, so
+/// the widget never has to run or maintain a login of its own. The read is
+/// silent after a one-time "Always Allow" (the app is stable-signed, so it stays
+/// in the item's ACL across rebuilds). The widget only ever READS — it never
+/// writes or refreshes Claude Code's token, so it cannot disturb the CLI's
+/// session.
 ///
-/// Steady state (no prompt of any kind):
-///   1. Return the in-memory cache while fresh.
-///   2. Read the app-owned store (silent).
-///   3. If the access token expired, refresh it with our own refresh token.
-///   4. If there is no stored token, or the refresh token is dead, report
-///      `needsLogin` so the UI can offer a one-time sign-in.
+/// Why not our own grant: a token minted by the widget shares Claude Code's
+/// public OAuth client, and Anthropic revokes it within a day; a long-lived
+/// `setup-token` is scoped for inference only and gets 403 on the usage
+/// endpoint. Borrowing Claude Code's already-fresh token is the only durable,
+/// correctly-scoped source.
+///
+/// iOS: there is no Claude Code keychain to borrow from, so the app keeps its
+/// own token (file store + OAuth refresh) as before.
 actor CredentialsManager {
     private struct InMemoryCache {
         let accessToken: String
@@ -25,40 +29,74 @@ actor CredentialsManager {
     private let expiryGracePeriod: TimeInterval = 60
 
     enum CredentialError: Error, Equatable {
-        case needsLogin              // no stored token, or the refresh token is genuinely dead
-        case temporarilyUnavailable // a transient refresh failure; the stored token is still good
+        case needsLogin              // no token available (macOS: keychain read denied / Claude Code signed out)
+        case temporarilyUnavailable // a transient refresh failure (iOS); the stored token is still good
     }
 
     init() {}
 
-    /// Returns a valid access token, refreshing silently if needed. Throws
-    /// `needsLogin` when interactive sign-in is required. Never prompts.
+    /// Returns a valid access token. Never prompts after the one-time keychain
+    /// grant on macOS. Throws `needsLogin` when no token can be read.
     func currentAccessToken(now: Date = .now) async throws -> String {
         if let cache, let exp = cache.expiresAt, exp.timeIntervalSince(now) > expiryGracePeriod {
             return cache.accessToken
         }
 
+        #if os(macOS)
+        // Read Claude Code's fresh token. Even if it is momentarily past its
+        // expiry (Claude Code refreshes in place), return it: a stale token just
+        // yields one 401 and the next read picks up the refreshed one. We must
+        // not refresh it ourselves.
+        guard let creds = try? KeychainReader.readClaudeCredentials(allowInteraction: true) else {
+            throw CredentialError.needsLogin
+        }
+        cache = InMemoryCache(accessToken: creds.accessToken, expiresAt: creds.expiresAt)
+        return creds.accessToken
+        #else
         guard let envelope = try? PlainCredentialStore.read() else {
             throw CredentialError.needsLogin
         }
-
         if let exp = envelope.expiresAt, exp.timeIntervalSince(now) <= expiryGracePeriod {
             return try await refreshStoredToken(envelope, now: now)
         }
         cache = InMemoryCache(accessToken: envelope.accessToken, expiresAt: envelope.expiresAt)
         return envelope.accessToken
+        #endif
     }
 
-    /// Called by `OAuthUsageClient` on 401/403. Forces a refresh; returns the new
+    /// Called by `OAuthUsageClient` on 401/403. On macOS this just re-reads the
+    /// keychain, in case Claude Code has rotated its token in place. Returns the
     /// token, or nil when sign-in is required.
     func forceTokenRefresh() async -> String? {
         cache = nil
+        #if os(macOS)
+        guard let creds = try? KeychainReader.readClaudeCredentials(allowInteraction: true) else { return nil }
+        cache = InMemoryCache(accessToken: creds.accessToken, expiresAt: creds.expiresAt)
+        return creds.accessToken
+        #else
         guard let envelope = try? PlainCredentialStore.read() else { return nil }
         return try? await refreshStoredToken(envelope, now: .now)
+        #endif
     }
 
-    /// Persists a freshly obtained token (from `OAuthLoginService`) and warms the
-    /// in-memory cache.
+    /// True when a token can be read right now (macOS: Claude Code is signed in
+    /// and the keychain read is permitted; iOS: a token is stored).
+    func hasStoredToken() -> Bool {
+        #if os(macOS)
+        return (try? KeychainReader.readClaudeCredentials(allowInteraction: true)) != nil
+        #else
+        return (try? PlainCredentialStore.read()) != nil
+        #endif
+    }
+
+    /// Clears the in-memory cache only.
+    func clearMemoryCache() {
+        cache = nil
+    }
+
+    /// Persists a freshly obtained token from the OAuth sign-in. Used by the iOS
+    /// sign-in; on macOS the widget reads Claude Code's token instead, so this is
+    /// never called there (kept compiled because the login service is shared).
     func storeOwnToken(accessToken: String, refreshToken: String?, expiresAt: Date?) {
         let envelope = BiometricCredentialStore.Envelope(
             accessToken: accessToken,
@@ -69,24 +107,11 @@ actor CredentialsManager {
         cache = InMemoryCache(accessToken: accessToken, expiresAt: expiresAt)
     }
 
-    /// True when a token is stored, so the UI can distinguish "never signed in"
-    /// from a transient fetch failure.
-    func hasStoredToken() -> Bool {
-        (try? PlainCredentialStore.read()) != nil
-    }
-
-    /// Clears the in-memory cache only. Leaves the stored token intact.
-    func clearMemoryCache() {
-        cache = nil
-    }
-
-    /// Forgets the stored token entirely (used when the user signs out).
+    /// iOS only: forgets the stored token (sign-out).
     func signOut() {
         cache = nil
         PlainCredentialStore.delete()
     }
-
-    // MARK: - Private
 
     private func refreshStoredToken(
         _ envelope: BiometricCredentialStore.Envelope,
@@ -99,8 +124,6 @@ actor CredentialsManager {
             let token = try await OAuthEndpoint.refresh(refreshToken: refreshToken, now: now)
             let stored = BiometricCredentialStore.Envelope(
                 accessToken: token.accessToken,
-                // Anthropic rotates the refresh token; keep the new one, and fall
-                // back to the old one if the response omitted it.
                 refreshToken: token.refreshToken ?? refreshToken,
                 expiresAt: token.expiresAt
             )
@@ -108,11 +131,6 @@ actor CredentialsManager {
             cache = InMemoryCache(accessToken: token.accessToken, expiresAt: token.expiresAt)
             return token.accessToken
         } catch {
-            // Only a genuine invalid_grant (HTTP 400/401 from the token endpoint)
-            // means the refresh token is dead and the user must sign in again.
-            // A network blip, 429, or 5xx is transient: the stored token is still
-            // valid, so report it as temporary and keep retrying — never slam the
-            // UI to the sign-in wall over a hiccup.
             if case OAuthEndpoint.EndpointError.http(let code) = error, code == 400 || code == 401 {
                 throw CredentialError.needsLogin
             }

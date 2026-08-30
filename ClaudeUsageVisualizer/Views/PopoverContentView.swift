@@ -109,14 +109,14 @@ struct PopoverContentView: View {
     /// one-time re-sign-in, which then switches to `LoginView` for the paste step.
     private var signInBanner: some View {
         Button {
-            login.beginLogin()
+            Task { await viewModel.refreshNow() }
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: "person.badge.key.fill")
-                Text("Signed out — numbers may be stale.")
+                Image(systemName: "key.horizontal.fill")
+                Text("Numbers may be stale — allow keychain access.")
                     .font(.caption2)
                 Spacer()
-                Text("Sign in")
+                Text("Retry")
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(.tint)
             }
