@@ -115,10 +115,10 @@ struct UsageHeaderView: View {
                 Circle().fill(Color.orange).frame(width: 5, height: 5)
                 Text("cached").font(.caption2).foregroundStyle(.orange)
             }
-        case .unauthorized, .needsLogin:
-            Text("sign in").font(.caption2).foregroundStyle(.tertiary)
-        case .stale, .unavailable, .none:
-            Text("estimated").font(.caption2).foregroundStyle(.tertiary)
+        case .unauthorized, .needsLogin, .stale, .unavailable, .none:
+            // Auth is optional now; a missing token just means we show the local
+            // transcript estimate rather than the exact server number.
+            Text("estimate").font(.caption2).foregroundStyle(.tertiary)
         }
     }
 

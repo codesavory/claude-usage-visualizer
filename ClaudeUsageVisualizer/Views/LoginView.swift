@@ -1,42 +1,76 @@
 import SwiftUI
 
-/// Shown on macOS when the widget can't read Claude Code's usage token. The
-/// widget borrows Claude Code's own token from the keychain (Claude Code keeps
-/// it fresh and it has the right scope), so there is no separate sign-in — the
-/// only thing needed is a one-time keychain "Always Allow".
+/// OPTIONAL sign-in for the exact server numbers. The widget works without it
+/// (local transcript estimate), so this is never forced and never a wall — it
+/// only appears when the user explicitly chooses "show exact %". Signing in
+/// stores the widget's own token (file store, no keychain); if it later lapses
+/// the widget silently falls back to the estimate rather than nagging.
 struct LoginView: View {
-    @EnvironmentObject var viewModel: UsageViewModel
-    @State private var retrying = false
+    @EnvironmentObject var login: OAuthLoginService
+    @State private var pastedCode: String = ""
 
     var body: some View {
-        VStack(spacing: 14) {
-            Image(systemName: "key.horizontal.fill")
-                .font(.system(size: 36))
+        VStack(spacing: 12) {
+            Image(systemName: "chart.bar.doc.horizontal")
+                .font(.system(size: 32))
                 .foregroundStyle(.tint)
-            Text("Grant usage access")
+            Text("Show exact usage")
                 .font(.headline)
-            Text("The widget reads Claude Code's usage token from your keychain. macOS asks once — click \u{201C}Always Allow\u{201D} and you won't see it again.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
 
-            Button {
-                retrying = true
-                Task { await viewModel.refreshNow(); retrying = false }
-            } label: {
-                if retrying { ProgressView().controlSize(.small) }
-                else { Text("Allow & load usage") }
+            switch login.phase {
+            case .idle, .done:
+                Text("Optional: connect your Claude account to show the exact usage %. Skip it and the widget shows a local estimate from your transcripts — no sign-in needed.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Connect Claude account") { login.beginLogin() }
+                    .buttonStyle(.borderedProminent)
+
+            case .awaitingCode, .failed:
+                Text("Approve access in your browser, then paste the code Anthropic shows you.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                TextField("Paste code here", text: $pastedCode)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { submit() }
+                if case .failed(let message) = login.phase {
+                    Text(message)
+                        .font(.caption2)
+                        .foregroundStyle(.red)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                HStack {
+                    Button("Reopen browser") { login.beginLogin() }
+                        .buttonStyle(.plain)
+                        .font(.caption)
+                    Spacer()
+                    Button("Sign in") { submit() }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(pastedCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+
+            case .exchanging:
+                ProgressView()
+                Text("Signing in…")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            .buttonStyle(.borderedProminent)
 
-            Text("Nothing happens? Make sure Claude Code is signed in — run `claude` in Terminal.")
+            Button("Use local estimate instead") { login.reset() }
+                .buttonStyle(.plain)
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(24)
         .frame(width: Theme.popoverWidth, height: 300)
+    }
+
+    private func submit() {
+        let code = pastedCode
+        Task { await login.submitCode(code) }
     }
 }

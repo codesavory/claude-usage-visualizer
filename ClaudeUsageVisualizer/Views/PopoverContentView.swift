@@ -43,7 +43,10 @@ struct PopoverContentView: View {
         VStack(spacing: 0) {
             if viewModel.isLoading {
                 loading
-            } else if signingIn || (needsLogin && !hasLastKnownUsage) {
+            } else if signingIn {
+                // Only when the user explicitly opted into the exact-numbers
+                // sign-in. Auth is never forced; a missing/dead token just falls
+                // back to the local estimate below.
                 LoginView()
             } else if viewModel.snapshot.currentBlock == nil && viewModel.snapshot.sessions.isEmpty && !hasLiveUsage && !hasLastKnownUsage {
                 OnboardingView()
@@ -79,10 +82,6 @@ struct PopoverContentView: View {
 
     private var content: some View {
         VStack(spacing: Theme.sectionSpacing) {
-            if needsLogin {
-                signInBanner
-            }
-
             UsageHeaderView()
 
             Divider()
@@ -104,31 +103,19 @@ struct PopoverContentView: View {
         .padding(Theme.popoverPadding)
     }
 
-    /// Non-blocking sign-in prompt shown above the numbers when the grant has
-    /// lapsed. The numbers stay visible (marked stale); tapping starts the
-    /// one-time re-sign-in, which then switches to `LoginView` for the paste step.
-    private var signInBanner: some View {
+    /// Unobtrusive opt-in for the exact server numbers. Shown in the footer only
+    /// when we're on the local estimate. Tapping starts the optional OAuth
+    /// sign-in (no keychain); the widget never requires it.
+    private var exactButton: some View {
         Button {
-            Task { await viewModel.refreshNow() }
+            login.beginLogin()
         } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "key.horizontal.fill")
-                Text("Numbers may be stale — allow keychain access.")
-                    .font(.caption2)
-                Spacer()
-                Text("Retry")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.tint)
-            }
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.secondary.opacity(0.10))
-            )
+            Text("exact %")
+                .font(.caption2)
+                .foregroundStyle(.tint)
         }
         .buttonStyle(.plain)
+        .help("Connect your Claude account to show the exact usage % instead of a local estimate")
     }
 
     @ViewBuilder
@@ -175,11 +162,14 @@ struct PopoverContentView: View {
         HStack(spacing: 10) {
             HStack(spacing: 4) {
                 Circle()
-                    .fill(.green)
+                    .fill(hasLiveUsage ? .green : Color.secondary)
                     .frame(width: 6, height: 6)
-                Text("live")
+                Text(hasLiveUsage ? "live" : "estimate")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+            }
+            if !hasLiveUsage {
+                exactButton
             }
             Spacer()
             SettingsLink {
