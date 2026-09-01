@@ -189,6 +189,19 @@ final class UsageViewModel: ObservableObject {
         await recompute()
     }
 
+    /// Manual-refresh path. Tries a normal fetch first; if that doesn't yield a
+    /// live server reading (no token yet, or the stored one expired), it adopts
+    /// Claude Code's own keychain token — raising the laptop password prompt —
+    /// and fetches again. This replaces the browser sign-in routine entirely.
+    func refreshFromKeychain() async {
+        var snap = await oauth.forceRefresh()
+        if snap?.status != .live && snap?.status != .rateLimited {
+            snap = await oauth.adoptClaudeCodeTokenAndRefresh()
+        }
+        liveUsage = snap
+        await recompute()
+    }
+
     func dismissNudge(_ nudge: BreakNudge) {
         dismissedNudgeIds.insert(nudge.id)
         if activeNudge?.id == nudge.id {

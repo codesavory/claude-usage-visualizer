@@ -49,6 +49,17 @@ actor OAuthUsageClient {
         return await performFetch(now: now)
     }
 
+    /// Manual-refresh shortcut: adopt Claude Code's keychain token (raises the
+    /// laptop password prompt) and then fetch immediately. Clears the backoff
+    /// window so the fetch always runs. Returns `cached` unchanged if the user
+    /// cancels the password prompt or the keychain item is missing.
+    func adoptClaudeCodeTokenAndRefresh(now: Date = .now) async -> OAuthUsageSnapshot? {
+        guard await credentials.adoptClaudeCodeToken() != nil else { return cached }
+        consecutive429s = 0
+        nextAllowedFetch = .distantPast
+        return await performFetch(now: now)
+    }
+
     // MARK: - Private
 
     private func performFetch(now: Date, isRetry: Bool = false) async -> OAuthUsageSnapshot? {

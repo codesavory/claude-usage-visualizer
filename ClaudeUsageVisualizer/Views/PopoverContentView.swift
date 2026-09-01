@@ -108,14 +108,14 @@ struct PopoverContentView: View {
     /// sign-in (no keychain); the widget never requires it.
     private var exactButton: some View {
         Button {
-            login.beginLogin()
+            Task { await viewModel.refreshFromKeychain() }
         } label: {
             Text("exact %")
                 .font(.caption2)
                 .foregroundStyle(.tint)
         }
         .buttonStyle(.plain)
-        .help("Connect your Claude account to show the exact usage % instead of a local estimate")
+        .help("Unlock Claude Code's keychain token (laptop password) to show the exact usage %")
     }
 
     @ViewBuilder
@@ -181,21 +181,15 @@ struct PopoverContentView: View {
             .buttonStyle(.plain)
 
             Button {
-                Task {
-                    await viewModel.refreshNow()
-                    // A manual refresh is an explicit opt-in for the exact
-                    // number. If the poll couldn't get it (no token, or the
-                    // grant expired — which is why the crude local estimate is
-                    // showing and reads way off the real %), start the sign-in
-                    // so the number the user sees is the real server value.
-                    // Automatic background polls never do this; they stay silent.
-                    if !hasLiveUsage { login.beginLogin() }
-                }
+                // Manual refresh reads Claude Code's own keychain token (raises
+                // the laptop password prompt) to show the exact server number.
+                // No browser sign-in. Background polls stay silent.
+                Task { await viewModel.refreshFromKeychain() }
             } label: {
                 Image(systemName: "arrow.clockwise")
             }
             .buttonStyle(.plain)
-            .help("Refresh · signs in to fetch the exact usage % when the estimate is stale")
+            .help("Refresh · unlocks Claude Code's keychain token for the exact usage %")
 
             Button {
                 NSApp.terminate(nil)

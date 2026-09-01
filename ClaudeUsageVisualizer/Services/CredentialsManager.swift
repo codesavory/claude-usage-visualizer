@@ -51,6 +51,30 @@ actor CredentialsManager {
         return try? await refreshStoredToken(envelope, now: .now)
     }
 
+    /// Adopts Claude Code's OWN OAuth token straight from the login keychain
+    /// (`Claude Code-credentials`). This is the shortcut that replaces the whole
+    /// browser sign-in routine: the user types their laptop (login-keychain)
+    /// password once, macOS hands over the token, and we cache + persist it so
+    /// `OAuthUsageClient` can read the exact server numbers.
+    ///
+    /// This raises the macOS login-keychain password prompt (this app is not in
+    /// that item's ACL), so ONLY call it from an explicit user action such as a
+    /// manual refresh — never on a background poll. Returns the access token on
+    /// success, or nil if the item is missing or the user cancelled the prompt.
+    func adoptClaudeCodeToken() -> String? {
+        guard let creds = try? KeychainReader.readClaudeCredentials(allowInteraction: true) else {
+            return nil
+        }
+        let envelope = BiometricCredentialStore.Envelope(
+            accessToken: creds.accessToken,
+            refreshToken: creds.refreshToken,
+            expiresAt: creds.expiresAt
+        )
+        try? PlainCredentialStore.write(envelope)
+        cache = InMemoryCache(accessToken: creds.accessToken, expiresAt: creds.expiresAt)
+        return creds.accessToken
+    }
+
     /// Persists a freshly obtained token from the optional OAuth sign-in.
     func storeOwnToken(accessToken: String, refreshToken: String?, expiresAt: Date?) {
         let envelope = BiometricCredentialStore.Envelope(
