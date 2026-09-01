@@ -47,11 +47,11 @@ private struct UsageScreen: View {
                 if let s = snapshot {
                     UsageRing(title: "5-hour block",
                               ratio: min(1, s.fiveHour.utilization / 100),
-                              resetsAt: s.fiveHour.resetsAt,
+                              resetsAt: s.fiveHour.projectedReset(period: UsageWindowPeriod.fiveHour),
                               status: s.status)
                     if s.sevenDay.resetsAt != .distantFuture {
                         WeeklyBar(ratio: min(1, s.sevenDay.utilization / 100),
-                                  resetsAt: s.sevenDay.resetsAt)
+                                  resetsAt: s.sevenDay.projectedReset(period: UsageWindowPeriod.weekly))
                     }
                 }
             }

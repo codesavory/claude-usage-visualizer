@@ -18,14 +18,18 @@ struct UsageHeaderView: View {
             return min(1.0, Double(messages) / Double(max(cap, 1)))
         }()
 
+        // Use the live 5-hour reset only when the snapshot is actually live; a
+        // stale 5h anchor can't be projected reliably (the window rolls from
+        // first activity), so fall back to the local block's reset otherwise.
+        let liveNow = (live?.status == .live || live?.status == .rateLimited)
         let resetsAt: Date? = {
-            if let live, live.fiveHour.resetsAt != .distantFuture {
+            if let live, liveNow, live.fiveHour.resetsAt != .distantFuture {
                 return live.fiveHour.resetsAt
             }
             return fallbackReset > 0 ? Date().addingTimeInterval(fallbackReset) : nil
         }()
         let resetSeconds: TimeInterval = {
-            if let live, live.fiveHour.resetsAt != .distantFuture {
+            if let live, liveNow, live.fiveHour.resetsAt != .distantFuture {
                 return max(0, live.fiveHour.resetsAt.timeIntervalSince(Date()))
             }
             return fallbackReset

@@ -121,7 +121,10 @@ struct PopoverContentView: View {
     @ViewBuilder
     private func weeklyBar(_ week: OAuthUsageWindow) -> some View {
         let r = min(1.0, week.utilization / 100.0)
-        let secs = week.resetsAt == .distantFuture ? 0 : max(0, week.resetsAt.timeIntervalSince(Date()))
+        // Project the weekly reset onto the current window so the countdown stays
+        // correct even from a stale last-known snapshot (weekly grid is fixed).
+        let reset = week.projectedReset(period: UsageWindowPeriod.weekly)
+        let secs = reset == .distantFuture ? 0 : max(0, reset.timeIntervalSince(Date()))
         VStack(spacing: 2) {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
@@ -136,7 +139,7 @@ struct PopoverContentView: View {
             HStack(spacing: 0) {
                 Text("\(Int((r * 100).rounded()))% weekly")
                 if secs > 0 {
-                    Text(" · resets \(DurationFormatter.daysAndHours(secs)) · \(DurationFormatter.clockTimeWithWeekday(week.resetsAt))")
+                    Text(" · resets \(DurationFormatter.daysAndHours(secs)) · \(DurationFormatter.clockTimeWithWeekday(reset))")
                 }
                 Spacer()
             }

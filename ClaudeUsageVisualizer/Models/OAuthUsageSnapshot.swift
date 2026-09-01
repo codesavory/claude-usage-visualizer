@@ -3,6 +3,24 @@ import Foundation
 struct OAuthUsageWindow: Sendable, Hashable, Codable {
     let utilization: Double   // 0–100
     let resetsAt: Date
+
+    /// The reset time rolled forward onto the CURRENT window. Anthropic's weekly
+    /// window resets on a fixed weekly grid and the 5-hour block every 5 hours,
+    /// so a stale last-known reset can be projected onto the live window with no
+    /// network call. This keeps the "resets in Xh · <clock>" countdown correct
+    /// even when we only hold a last-known snapshot and no live token.
+    func projectedReset(period: TimeInterval, now: Date = Date()) -> Date {
+        guard resetsAt != .distantFuture, period > 0 else { return resetsAt }
+        var r = resetsAt
+        while r <= now { r = r.addingTimeInterval(period) }
+        return r
+    }
+}
+
+/// Standard Anthropic window lengths, for projecting a stale reset forward.
+enum UsageWindowPeriod {
+    static let fiveHour: TimeInterval = 5 * 3600
+    static let weekly: TimeInterval = 7 * 24 * 3600
 }
 
 struct OAuthUsageSnapshot: Sendable, Hashable, Codable {
