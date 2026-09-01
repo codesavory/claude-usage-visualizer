@@ -181,11 +181,21 @@ struct PopoverContentView: View {
             .buttonStyle(.plain)
 
             Button {
-                Task { await viewModel.refreshNow() }
+                Task {
+                    await viewModel.refreshNow()
+                    // A manual refresh is an explicit opt-in for the exact
+                    // number. If the poll couldn't get it (no token, or the
+                    // grant expired — which is why the crude local estimate is
+                    // showing and reads way off the real %), start the sign-in
+                    // so the number the user sees is the real server value.
+                    // Automatic background polls never do this; they stay silent.
+                    if !hasLiveUsage { login.beginLogin() }
+                }
             } label: {
                 Image(systemName: "arrow.clockwise")
             }
             .buttonStyle(.plain)
+            .help("Refresh · signs in to fetch the exact usage % when the estimate is stale")
 
             Button {
                 NSApp.terminate(nil)
