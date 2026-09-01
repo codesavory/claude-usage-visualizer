@@ -49,6 +49,16 @@ actor OAuthUsageClient {
         return await performFetch(now: now)
     }
 
+    /// Open/foreground refresh: opportunistically pull Claude Code's keychain
+    /// token WITHOUT prompting, then fetch the latest usage. Always runs the
+    /// fetch (clears the backoff) so opening the widget shows current numbers.
+    /// Never raises the password prompt — that stays on the manual refresh path.
+    func refreshOnAppear(now: Date = .now) async -> OAuthUsageSnapshot? {
+        await credentials.adoptClaudeCodeTokenSilently()
+        nextAllowedFetch = .distantPast
+        return await performFetch(now: now)
+    }
+
     /// Manual-refresh shortcut: adopt Claude Code's keychain token (raises the
     /// laptop password prompt) and then fetch immediately. Clears the backoff
     /// window so the fetch always runs. Returns `cached` unchanged if the user

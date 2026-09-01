@@ -189,6 +189,16 @@ final class UsageViewModel: ObservableObject {
         await recompute()
     }
 
+    /// Called every time the popover opens. Fetches the latest usage right away
+    /// (opportunistically pulling Claude Code's keychain token if the OS lets us
+    /// read it silently). Never prompts — so opening the widget always shows the
+    /// freshest number it can get without interrupting the user.
+    func refreshOnAppear() async {
+        let snap = await oauth.refreshOnAppear()
+        liveUsage = snap
+        await recompute()
+    }
+
     /// Manual-refresh path. Tries a normal fetch first; if that doesn't yield a
     /// live server reading (no token yet, or the stored one expired), it adopts
     /// Claude Code's own keychain token — raising the laptop password prompt —

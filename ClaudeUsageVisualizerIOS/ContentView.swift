@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var vm = IOSUsageViewModel()
+    @Environment(\.scenePhase) private var scenePhase
 
     private var needsLogin: Bool {
         switch vm.liveUsage?.status {
@@ -27,6 +28,12 @@ struct ContentView: View {
             .navigationTitle("Claude Usage")
         }
         .onAppear { vm.start() }
+        .onChange(of: scenePhase) { _, phase in
+            // Fetch the latest usage whenever the app comes to the foreground.
+            if phase == .active {
+                Task { await vm.refreshNow() }
+            }
+        }
     }
 }
 

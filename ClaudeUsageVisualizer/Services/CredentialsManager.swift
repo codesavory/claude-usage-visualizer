@@ -62,6 +62,7 @@ actor CredentialsManager {
     /// manual refresh — never on a background poll. Returns the access token on
     /// success, or nil if the item is missing or the user cancelled the prompt.
     func adoptClaudeCodeToken() -> String? {
+        #if os(macOS)
         guard let creds = try? KeychainReader.readClaudeCredentials(allowInteraction: true) else {
             return nil
         }
@@ -73,6 +74,36 @@ actor CredentialsManager {
         try? PlainCredentialStore.write(envelope)
         cache = InMemoryCache(accessToken: creds.accessToken, expiresAt: creds.expiresAt)
         return creds.accessToken
+        #else
+        // iOS has no Claude Code keychain to borrow; sign-in is OAuth-only.
+        return nil
+        #endif
+    }
+
+    /// Silent variant of `adoptClaudeCodeToken`: reads Claude Code's keychain
+    /// token WITHOUT ever raising the password prompt (`allowInteraction: false`).
+    /// If the login keychain would need user presence it just returns nil and
+    /// leaves any stored token untouched. Safe to call on every widget open —
+    /// it refreshes the token opportunistically when the OS lets us read it, and
+    /// is a silent no-op otherwise. The prompting path stays on the manual
+    /// refresh button only.
+    @discardableResult
+    func adoptClaudeCodeTokenSilently() -> String? {
+        #if os(macOS)
+        guard let creds = try? KeychainReader.readClaudeCredentials(allowInteraction: false) else {
+            return nil
+        }
+        let envelope = BiometricCredentialStore.Envelope(
+            accessToken: creds.accessToken,
+            refreshToken: creds.refreshToken,
+            expiresAt: creds.expiresAt
+        )
+        try? PlainCredentialStore.write(envelope)
+        cache = InMemoryCache(accessToken: creds.accessToken, expiresAt: creds.expiresAt)
+        return creds.accessToken
+        #else
+        return nil
+        #endif
     }
 
     /// Persists a freshly obtained token from the optional OAuth sign-in.

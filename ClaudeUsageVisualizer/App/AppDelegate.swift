@@ -76,6 +76,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
+            // Fetch the latest usage on open (silent — never prompts).
+            Task { await usageViewModel.refreshOnAppear() }
         }
     }
 
