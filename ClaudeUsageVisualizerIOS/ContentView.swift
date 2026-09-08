@@ -29,8 +29,11 @@ struct ContentView: View {
         }
         .onAppear { vm.start() }
         .onChange(of: scenePhase) { _, phase in
-            // Fetch the latest usage whenever the app comes to the foreground.
-            if phase == .active {
+            // Refresh on a real return to the foreground. Skip while the initial
+            // load is still running (this fires on launch too, and start()
+            // already handles the first fetch) so the two don't race and briefly
+            // surface a login state before the numbers land.
+            if phase == .active && !vm.isLoading {
                 Task { await vm.refreshNow() }
             }
         }

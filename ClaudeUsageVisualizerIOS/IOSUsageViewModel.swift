@@ -27,10 +27,19 @@ final class IOSUsageViewModel: ObservableObject {
 
     func start() {
         guard pollTask == nil else { return }
-        if let seeded = UsageSnapshotStore.load() { liveUsage = seeded }
+        let seeded = UsageSnapshotStore.load()
+        if let seeded { liveUsage = seeded }
         pollTask = Task { [weak self] in
+            guard let self else { return }
+            // Seed the OAuth client's cache with the last-known snapshot BEFORE
+            // the first fetch. If that fetch briefly comes back needsLogin (an
+            // expired token being refreshed), performFetch then returns the
+            // seeded numbers instead of an empty one — so the UI stays on the
+            // usage screen and never flashes the full login screen before the
+            // real percentage lands.
+            if let seeded { await self.oauth.seed(seeded) }
             while !Task.isCancelled {
-                await self?.refresh(force: false)
+                await self.refresh(force: false)
                 try? await Task.sleep(nanoseconds: 60_000_000_000)
             }
         }
