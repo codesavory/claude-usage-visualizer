@@ -178,6 +178,17 @@ struct PopoverContentView: View {
                 exactButton
             }
             Spacer()
+
+            // Usage credits: pay-as-you-go past the plan cap. When on, hitting the
+            // cap no longer flips the menu-bar icon to the dead "XO".
+            Toggle(isOn: $settings.usageCreditsEnabled) {
+                Image(systemName: "creditcard")
+            }
+            .toggleStyle(.button)
+            .buttonStyle(.plain)
+            .foregroundStyle(settings.usageCreditsEnabled ? Color.green : .secondary)
+            .help("Usage credits — keep going past the plan cap (no dead XO at 100%)")
+
             SettingsLink {
                 Image(systemName: "gearshape")
             }

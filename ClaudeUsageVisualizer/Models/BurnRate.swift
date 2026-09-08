@@ -28,4 +28,7 @@ struct BurnRate: Sendable, Hashable {
 
 enum StatusIconState: Sendable, Hashable {
     case chill, warm, hot, critical, offline
+    // Fainted "XO" state: signed out of Claude, or the session budget is fully spent
+    // (100%) with no usage credits enabled. Rendered as a dead-Pokemon "XO" face.
+    case dead
 }

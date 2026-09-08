@@ -265,6 +265,12 @@ final class UsageViewModel: ObservableObject {
     }
 
     private func computeStatusIcon(snap: UsageSnapshot, tier: UsageTier) -> StatusIconState {
+        // Signed out of Claude -> dead "XO". A missing/dead token surfaces as a
+        // needsLogin/unauthorized live status.
+        if let live = liveUsage, live.status == .needsLogin || live.status == .unauthorized {
+            return .dead
+        }
+
         // Prefer live Anthropic utilization if we have it.
         let ratio: Double
         if let live = liveUsage, live.status == .live || live.status == .rateLimited {
@@ -274,6 +280,11 @@ final class UsageViewModel: ObservableObject {
         } else {
             return snap.sessions.contains(where: { $0.isRunning }) ? .chill : .offline
         }
+
+        // Budget fully spent (100%) -> dead "XO", unless usage credits are enabled
+        // (pay-as-you-go past the cap keeps the session alive).
+        let creditsEnabled = UserDefaults.standard.bool(forKey: "usageCreditsEnabled")
+        if ratio >= 1.0 && !creditsEnabled { return .dead }
 
         if ratio >= 0.9 { return .critical }
         if ratio >= 0.75 {
