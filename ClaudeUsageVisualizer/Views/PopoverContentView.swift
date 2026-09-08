@@ -167,7 +167,10 @@ struct PopoverContentView: View {
                 Circle()
                     .fill(hasLiveUsage ? .green : Color.secondary)
                     .frame(width: 6, height: 6)
-                Text(hasLiveUsage ? "live" : "estimate")
+                // live = fresh server number; cached = last-known server total
+                // (still the true cross-surface usage, just not re-fetched);
+                // estimate = local transcript fallback, no server number yet.
+                Text(hasLiveUsage ? "live" : (hasLastKnownUsage ? "cached" : "estimate"))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }

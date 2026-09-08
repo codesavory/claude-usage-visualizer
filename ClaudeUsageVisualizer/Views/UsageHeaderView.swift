@@ -10,8 +10,14 @@ struct UsageHeaderView: View {
         let messages = viewModel.snapshot.currentBlock?.messageCount ?? 0
         let fallbackReset = viewModel.snapshot.currentBlock?.timeRemaining(now: viewModel.snapshot.generatedAt) ?? 0
 
+        // Prefer the server /usage number whenever we hold one — live OR a
+        // persisted last-known reading. It is the TRUE total across every
+        // surface (Claude Code, the web app, everything), whereas the local
+        // transcript estimate only counts Claude Code sessions on this Mac and
+        // reads 0% when none are open. The transcript estimate is the fallback
+        // only when a server number has never been fetched.
         let ratio: Double = {
-            if let live, live.status == .live || live.status == .rateLimited {
+            if let live, live.hasRealNumbers {
                 return min(1.0, live.fiveHour.utilization / 100.0)
             }
             let cap = tier.messagesPerBlock
@@ -92,7 +98,7 @@ struct UsageHeaderView: View {
         let tier = settings.tier
         let messages = viewModel.snapshot.currentBlock?.messageCount ?? 0
         let ratio: Double = {
-            if let live, live.status == .live || live.status == .rateLimited {
+            if let live, live.hasRealNumbers {
                 return min(1.0, live.fiveHour.utilization / 100.0)
             }
             return min(1.0, Double(messages) / Double(max(tier.messagesPerBlock, 1)))
@@ -120,9 +126,18 @@ struct UsageHeaderView: View {
                 Text("cached").font(.caption2).foregroundStyle(.orange)
             }
         case .unauthorized, .needsLogin, .stale, .unavailable, .none:
-            // Auth is optional now; a missing token just means we show the local
-            // transcript estimate rather than the exact server number.
-            Text("estimate").font(.caption2).foregroundStyle(.tertiary)
+            // If we still hold a real server reading (persisted last-known), we
+            // are showing that true total — just not freshly re-fetched — so
+            // call it "cached", not "estimate". Only when no server number has
+            // ever been fetched do we fall to the transcript estimate.
+            if live?.hasRealNumbers == true {
+                HStack(spacing: 3) {
+                    Circle().fill(Color.secondary).frame(width: 5, height: 5)
+                    Text("cached").font(.caption2).foregroundStyle(.secondary)
+                }
+            } else {
+                Text("estimate").font(.caption2).foregroundStyle(.tertiary)
+            }
         }
     }
 
