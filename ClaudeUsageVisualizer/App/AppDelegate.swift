@@ -84,20 +84,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func configureStatusButton(state: StatusIconState, title: String?) {
         guard let button = statusItem.button else { return }
 
-        // Dead state: no SF Symbol — draw a red "XO" fainted face (dead-Pokemon)
-        // instead of the terminal glyph.
-        if state == .dead {
-            button.image = nil
-            button.imagePosition = .noImage
-            button.attributedTitle = NSAttributedString(
-                string: "XO",
-                attributes: [
-                    .foregroundColor: NSColor.systemRed,
-                    .font: NSFont.systemFont(ofSize: 12, weight: .heavy),
-                ])
-            return
-        }
-
         let (symbol, tint) = symbolAndTint(for: state)
         let config = NSImage.SymbolConfiguration(paletteColors: [tint])
         if let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Claude Usage")?
@@ -120,7 +106,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .hot:      return ("terminal.fill", .systemOrange)
         case .critical: return ("terminal.fill", .systemRed)
         case .offline:  return ("terminal",      .tertiaryLabelColor)
-        case .dead:     return ("xmark.circle.fill", .systemRed) // fallback; handled above
+        // Cap reached: a calm "at rest" glyph in soft indigo, not an alarm.
+        case .dead:     return ("moon.zzz.fill", .systemIndigo)
         }
     }
 
