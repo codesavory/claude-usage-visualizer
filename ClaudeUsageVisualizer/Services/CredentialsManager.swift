@@ -43,8 +43,29 @@ actor CredentialsManager {
         return envelope.accessToken
     }
 
-    /// Called by `OAuthUsageClient` on 401/403. Forces a refresh; returns the new
-    /// token, or nil when no usable token exists.
+    /// Drops the in-memory cache and re-reads the access token straight from
+    /// disk, WITHOUT refreshing (so it never rotates the shared OAuth grant).
+    /// Returns the disk token when one is present and not past expiry, else nil.
+    ///
+    /// This is the first recovery step on a 401: Claude Code (or a manual
+    /// refresh) frequently writes a fresh, valid token to disk while the widget
+    /// is still holding an older one in memory. Reading it back recovers the
+    /// live numbers with zero risk of invalidating anyone's session. Only when
+    /// the disk token is also gone/expired do we fall back to an actual refresh.
+    func reloadValidTokenFromDisk(now: Date = .now) -> String? {
+        cache = nil
+        guard let envelope = try? PlainCredentialStore.read() else { return nil }
+        if let exp = envelope.expiresAt, exp.timeIntervalSince(now) <= expiryGracePeriod {
+            return nil // on-disk token is itself expired; a refresh is required
+        }
+        cache = InMemoryCache(accessToken: envelope.accessToken, expiresAt: envelope.expiresAt)
+        return envelope.accessToken
+    }
+
+    /// Called by `OAuthUsageClient` on 401/403 as a LAST resort. Forces a refresh
+    /// of the stored token; returns the new token, or nil when no usable token
+    /// exists. Prefer `reloadValidTokenFromDisk` first — refreshing rotates the
+    /// shared grant and can race Claude Code's own rotation.
     func forceTokenRefresh() async -> String? {
         cache = nil
         guard let envelope = try? PlainCredentialStore.read() else { return nil }

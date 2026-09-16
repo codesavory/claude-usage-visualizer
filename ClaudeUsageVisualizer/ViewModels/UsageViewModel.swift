@@ -68,6 +68,20 @@ final class UsageViewModel: ObservableObject {
             liveUsage = seeded
             await oauth.seed(seeded)
         }
+        // Start the OAuth usage poll FIRST, before the potentially slow 7-day
+        // transcript backfill below. The server number is the primary display,
+        // and it must not wait on transcript scanning (which can take many
+        // seconds with large sessions open). This is what the iPhone app does:
+        // poll the endpoint straight away, independent of any local machinery.
+        oauthTask = Task { [weak self] in
+            // Prime immediately, then refresh every 60s — the client itself
+            // enforces the 6-min TTL + 429 backoff internally.
+            while !Task.isCancelled {
+                await self?.refreshOAuthUsage()
+                try? await Task.sleep(nanoseconds: 60_000_000_000)
+            }
+        }
+
         await aggregator.updateThresholds(
             warm: settings.burnWarmThreshold,
             hot: settings.burnHotThreshold,
@@ -96,15 +110,6 @@ final class UsageViewModel: ObservableObject {
             while !Task.isCancelled {
                 await self?.recompute()
                 try? await Task.sleep(nanoseconds: UInt64(max(1.0, settings.refreshIntervalSeconds) * 1_000_000_000))
-            }
-        }
-
-        oauthTask = Task { [weak self] in
-            // Prime immediately, then refresh every 60s — the client itself
-            // enforces the 6-min TTL + 429 backoff internally.
-            while !Task.isCancelled {
-                await self?.refreshOAuthUsage()
-                try? await Task.sleep(nanoseconds: 60_000_000_000)
             }
         }
     }

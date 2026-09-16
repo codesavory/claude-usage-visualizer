@@ -135,10 +135,21 @@ actor OAuthUsageClient {
 
             if http.statusCode == 401 || http.statusCode == 403 {
                 if !isRetry {
-                    // Try a silent token refresh (Touch ID, no password). If it
-                    // yields a new token, retry the fetch once.
-                    if let _ = await credentials.forceTokenRefresh() {
-                        return await performFetch(now: now, isRetry: true)
+                    // Step 1 (no rotation): the token on disk is frequently newer
+                    // and valid — Claude Code or a manual refresh wrote it while
+                    // we held an older one in memory. Re-read it and retry. This
+                    // recovers the live numbers without refreshing, so it never
+                    // races Claude Code's rotation of the shared grant (the cause
+                    // of the widget "getting logged out" while a good token sits
+                    // on disk).
+                    if await credentials.reloadValidTokenFromDisk(now: now) != nil {
+                        let retried = await performFetch(now: now, isRetry: true)
+                        if let retried, retried.status == .live { return retried }
+                    }
+                    // Step 2 (last resort): actually refresh the stored token.
+                    if await credentials.forceTokenRefresh() != nil {
+                        let retried = await performFetch(now: now, isRetry: true)
+                        if let retried, retried.status == .live { return retried }
                     }
                 }
                 // Refresh either failed or we already retried — surface unauthorized.
