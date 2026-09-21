@@ -270,15 +270,14 @@ final class UsageViewModel: ObservableObject {
     }
 
     private func computeStatusIcon(snap: UsageSnapshot, tier: UsageTier) -> StatusIconState {
-        // Signed out of Claude -> dead "XO". A missing/dead token surfaces as a
-        // needsLogin/unauthorized live status.
-        if let live = liveUsage, live.status == .needsLogin || live.status == .unauthorized {
-            return .dead
-        }
-
-        // Prefer live Anthropic utilization if we have it.
+        // Drive the icon off the real server utilization whenever we hold one —
+        // live OR a cached last-known reading. A lapsed token no longer flips the
+        // icon to the "dead" glyph: we still show the true % (e.g. 19% cached),
+        // and the widget recovers the token on its own, so a sign-in lapse must
+        // not read as "spent". The dead glyph is reserved for a genuine 100% cap
+        // (handled below).
         let ratio: Double
-        if let live = liveUsage, live.status == .live || live.status == .rateLimited {
+        if let live = liveUsage, live.hasRealNumbers {
             ratio = live.fiveHour.utilization / 100.0
         } else if let block = snap.currentBlock {
             ratio = Double(block.messageCount) / Double(max(tier.messagesPerBlock, 1))
@@ -286,8 +285,8 @@ final class UsageViewModel: ObservableObject {
             return snap.sessions.contains(where: { $0.isRunning }) ? .chill : .offline
         }
 
-        // Budget fully spent (100%) -> dead "XO", unless usage credits are enabled
-        // (pay-as-you-go past the cap keeps the session alive).
+        // Budget fully spent (100%) -> dead glyph, unless usage credits are
+        // enabled (pay-as-you-go past the cap keeps the session alive).
         let creditsEnabled = UserDefaults.standard.bool(forKey: "usageCreditsEnabled")
         if ratio >= 1.0 && !creditsEnabled { return .dead }
 
