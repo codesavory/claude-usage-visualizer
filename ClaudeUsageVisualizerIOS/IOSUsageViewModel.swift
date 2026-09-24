@@ -14,6 +14,7 @@ final class IOSUsageViewModel: ObservableObject {
     private let credentials: CredentialsManager
     private let oauth: OAuthUsageClient
     private var pollTask: Task<Void, Never>?
+    private var iCloudObserver: NSObjectProtocol?
 
     init() {
         let creds = CredentialsManager()
@@ -29,8 +30,24 @@ final class IOSUsageViewModel: ObservableObject {
         guard pollTask == nil else { return }
         let seeded = UsageSnapshotStore.load()
         if let seeded { liveUsage = seeded }
+
+        // Adopt a token validated on the Mac (published via the shared iCloud
+        // key-value store) whenever it arrives, then refresh. This is what makes
+        // "sign in once, both devices work" seamless from the phone's side.
+        iCloudObserver = ICloudTokenSync.observe { [weak self] in
+            Task { [weak self] in
+                guard let self else { return }
+                if await self.credentials.syncFromICloudIfNewer() {
+                    await self.refreshNow()
+                }
+            }
+        }
+
         pollTask = Task { [weak self] in
             guard let self else { return }
+            // Adopt any iCloud-shared token BEFORE the first fetch, so a token the
+            // Mac validated logs the phone in with no sign-in here.
+            await self.credentials.syncFromICloudIfNewer()
             // Seed the OAuth client's cache with the last-known snapshot BEFORE
             // the first fetch. If that fetch briefly comes back needsLogin (an
             // expired token being refreshed), performFetch then returns the
@@ -45,7 +62,10 @@ final class IOSUsageViewModel: ObservableObject {
         }
     }
 
-    func refreshNow() async { await refresh(force: true) }
+    func refreshNow() async {
+        await credentials.syncFromICloudIfNewer()
+        await refresh(force: true)
+    }
 
     private func refresh(force: Bool) async {
         let snap = force ? await oauth.forceRefresh() : await oauth.refreshIfNeeded()

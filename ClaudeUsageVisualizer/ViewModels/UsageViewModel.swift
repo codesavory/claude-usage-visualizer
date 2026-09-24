@@ -55,10 +55,27 @@ final class UsageViewModel: ObservableObject {
     private var registryTask: Task<Void, Never>?
     private var tickTask: Task<Void, Never>?
     private var lastBlockAnchor: Date?
+    private var iCloudObserver: NSObjectProtocol?
 
     func start(settings: SettingsViewModel) async {
         self.settings = settings
         isLoading = true
+
+        // Adopt a token another device (the iPhone) validated, published via the
+        // shared iCloud key-value store, BEFORE the first poll. Sign in once on
+        // either device and both show the exact numbers with no extra sign-in.
+        await credentials.syncFromICloudIfNewer()
+
+        // Keep adopting whenever the other device pushes a fresh token, then
+        // re-fetch so the numbers update without any interaction here.
+        iCloudObserver = ICloudTokenSync.observe { [weak self] in
+            Task { [weak self] in
+                guard let self else { return }
+                if await self.credentials.syncFromICloudIfNewer() {
+                    await self.refreshNow()
+                }
+            }
+        }
 
         // Seed last-known usage from disk so the popover shows numbers the moment
         // it opens — before the first poll, and even if that poll fails because
@@ -199,6 +216,8 @@ final class UsageViewModel: ObservableObject {
     /// read it silently). Never prompts — so opening the widget always shows the
     /// freshest number it can get without interrupting the user.
     func refreshOnAppear() async {
+        // Adopt any token the iPhone validated since we last looked, then fetch.
+        await credentials.syncFromICloudIfNewer()
         let snap = await oauth.refreshOnAppear()
         liveUsage = snap
         await recompute()

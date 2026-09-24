@@ -19,10 +19,10 @@ install: build
 	@echo "Installed: $(DEST)"
 
 build:
-	xcodebuild -scheme $(SCHEME) -configuration Release -derivedDataPath $(DERIVED) build
+	xcodebuild -scheme $(SCHEME) -configuration Release -derivedDataPath $(DERIVED) -allowProvisioningUpdates build
 
 test:
-	xcodebuild test -scheme $(SCHEME) -destination 'platform=macOS' -derivedDataPath $(DERIVED)
+	xcodebuild test -scheme $(SCHEME) -destination 'platform=macOS' -derivedDataPath $(DERIVED) -allowProvisioningUpdates
 
 clean:
 	rm -rf build

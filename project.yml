@@ -22,16 +22,14 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_FILE: ClaudeUsageVisualizer/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: ClaudeUsageVisualizer/Resources/ClaudeUsageVisualizer.entitlements
-        # Sign with a stable self-signed identity (valid to 2036) instead of
-        # ad-hoc. Ad-hoc changes the code hash every rebuild, which invalidates
-        # the keychain ACL on the app's own credential item and forces a fresh
-        # login-password prompt after each reinstall. A stable identity keeps a
-        # constant designated requirement, so keychain ownership survives
-        # rebuilds and the prompt never recurs.
-        CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: "md-local-signing"
-        DEVELOPMENT_TEAM: ""
-        PROVISIONING_PROFILE_SPECIFIER: ""
+        # Signed with the Apple Developer team (automatic) so the app can carry
+        # the iCloud key-value-store entitlement and share the OAuth token with
+        # the iPhone app. The token now lives in a plain 0600 file, not a keychain
+        # item, so changing the signing identity no longer triggers the old
+        # login-password prompt (that was the reason for the earlier self-signed
+        # identity, which is no longer needed).
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: C9BQ4L3K7L
         SWIFT_VERSION: "6.0"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         GENERATE_INFOPLIST_FILE: true
@@ -45,12 +43,15 @@ targets:
     platform: iOS
     sources:
       - path: ClaudeUsageVisualizerIOS
+        excludes:
+          - "**/*.entitlements"
       - path: ClaudeUsageVisualizer/Services/OAuthEndpoint.swift
       - path: ClaudeUsageVisualizer/Services/OAuthUsageClient.swift
       - path: ClaudeUsageVisualizer/Services/CredentialsManager.swift
       - path: ClaudeUsageVisualizer/Services/OAuthLoginService.swift
       - path: ClaudeUsageVisualizer/Models/OAuthUsageSnapshot.swift
       - path: ClaudeUsageVisualizer/Utilities/BiometricCredentialStore.swift
+      - path: ClaudeUsageVisualizer/Utilities/ICloudTokenSync.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.claudeusagevisualizer.ios
@@ -65,6 +66,7 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: C9BQ4L3K7L
+        CODE_SIGN_ENTITLEMENTS: ClaudeUsageVisualizerIOS/ClaudeUsageVisualizerIOS.entitlements
 
   ClaudeUsageVisualizerTests:
     type: bundle.unit-test

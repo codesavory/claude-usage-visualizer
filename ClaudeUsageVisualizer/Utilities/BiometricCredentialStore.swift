@@ -15,6 +15,10 @@ enum BiometricCredentialStore {
         let accessToken: String
         let refreshToken: String?
         let expiresAt: Date?
+        /// When this envelope was last written locally. Used to decide which
+        /// device's token is freshest when syncing across iCloud. Optional so
+        /// older on-disk envelopes (no field) still decode.
+        var updatedAt: Date? = nil
     }
 
     enum StoreError: Error {

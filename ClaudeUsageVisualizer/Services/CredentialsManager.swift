@@ -87,13 +87,7 @@ actor CredentialsManager {
         guard let creds = try? KeychainReader.readClaudeCredentials(allowInteraction: true) else {
             return nil
         }
-        let envelope = BiometricCredentialStore.Envelope(
-            accessToken: creds.accessToken,
-            refreshToken: creds.refreshToken,
-            expiresAt: creds.expiresAt
-        )
-        try? PlainCredentialStore.write(envelope)
-        cache = InMemoryCache(accessToken: creds.accessToken, expiresAt: creds.expiresAt)
+        persist(accessToken: creds.accessToken, refreshToken: creds.refreshToken, expiresAt: creds.expiresAt)
         return creds.accessToken
         #else
         // iOS has no Claude Code keychain to borrow; sign-in is OAuth-only.
@@ -114,28 +108,57 @@ actor CredentialsManager {
         guard let creds = try? KeychainReader.readClaudeCredentials(allowInteraction: false) else {
             return nil
         }
-        let envelope = BiometricCredentialStore.Envelope(
-            accessToken: creds.accessToken,
-            refreshToken: creds.refreshToken,
-            expiresAt: creds.expiresAt
-        )
-        try? PlainCredentialStore.write(envelope)
-        cache = InMemoryCache(accessToken: creds.accessToken, expiresAt: creds.expiresAt)
+        persist(accessToken: creds.accessToken, refreshToken: creds.refreshToken, expiresAt: creds.expiresAt)
         return creds.accessToken
         #else
         return nil
         #endif
     }
 
-    /// Persists a freshly obtained token from the optional OAuth sign-in.
+    /// Persists a freshly obtained token from the optional OAuth sign-in, and
+    /// publishes it to iCloud so the other device picks it up automatically.
     func storeOwnToken(accessToken: String, refreshToken: String?, expiresAt: Date?) {
-        let envelope = BiometricCredentialStore.Envelope(
+        persist(accessToken: accessToken, refreshToken: refreshToken, expiresAt: expiresAt)
+    }
+
+    /// Pulls the token the other device published to iCloud and adopts it when
+    /// it is fresher than what we hold locally (or we hold nothing). Returns
+    /// true if a newer token was adopted. No-op without iCloud. Never pushes
+    /// back, so it cannot loop with the other device.
+    @discardableResult
+    func syncFromICloudIfNewer(now: Date = .now) -> Bool {
+        guard let remote = ICloudTokenSync.pull() else { return false }
+        let local = try? PlainCredentialStore.read()
+        if let local {
+            if local.accessToken == remote.accessToken { return false }
+            if !Self.isNewer(remote, than: local) { return false }
+        }
+        try? PlainCredentialStore.write(remote)
+        cache = InMemoryCache(accessToken: remote.accessToken, expiresAt: remote.expiresAt)
+        return true
+    }
+
+    private static func isNewer(
+        _ a: BiometricCredentialStore.Envelope,
+        than b: BiometricCredentialStore.Envelope
+    ) -> Bool {
+        if let au = a.updatedAt, let bu = b.updatedAt { return au > bu }
+        if let ae = a.expiresAt, let be = b.expiresAt { return ae > be }
+        return a.updatedAt != nil // remote stamped, local not -> prefer remote
+    }
+
+    /// Single write path: stamps `updatedAt`, writes the 0600 file, updates the
+    /// in-memory cache, and publishes to iCloud for the other device.
+    private func persist(accessToken: String, refreshToken: String?, expiresAt: Date?, now: Date = .now) {
+        let env = BiometricCredentialStore.Envelope(
             accessToken: accessToken,
             refreshToken: refreshToken,
-            expiresAt: expiresAt
+            expiresAt: expiresAt,
+            updatedAt: now
         )
-        try? PlainCredentialStore.write(envelope)
+        try? PlainCredentialStore.write(env)
         cache = InMemoryCache(accessToken: accessToken, expiresAt: expiresAt)
+        ICloudTokenSync.push(env)
     }
 
     /// True when a token is stored.
@@ -165,13 +188,12 @@ actor CredentialsManager {
         }
         do {
             let token = try await OAuthEndpoint.refresh(refreshToken: refreshToken, now: now)
-            let stored = BiometricCredentialStore.Envelope(
+            persist(
                 accessToken: token.accessToken,
                 refreshToken: token.refreshToken ?? refreshToken,
-                expiresAt: token.expiresAt
+                expiresAt: token.expiresAt,
+                now: now
             )
-            try? PlainCredentialStore.write(stored)
-            cache = InMemoryCache(accessToken: token.accessToken, expiresAt: token.expiresAt)
             return token.accessToken
         } catch {
             if case OAuthEndpoint.EndpointError.http(let code) = error, code == 400 || code == 401 {

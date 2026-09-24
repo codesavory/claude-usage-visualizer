@@ -19,6 +19,7 @@
 		1DA1D502BBE4E8AD5DF4EAB6 /* BurnRateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF37D9DC2255AAF4AC7B3C57 /* BurnRateTests.swift */; };
 		29557BE3924D0AC417DDC4EB /* HabitEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01CC9B131C842E2D1CEC3FC0 /* HabitEngine.swift */; };
 		2AE4B958A66133FE55964B7B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7D08C09682AA38ADDC8E191 /* ContentView.swift */; };
+		2B104EBA961ADCA9D6E01019 /* ICloudTokenSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E62010DC4A055CCD84E3CB4 /* ICloudTokenSync.swift */; };
 		32E12634DB9D5185F599BC58 /* ModelPricing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 125AFEB980D5B46B7B5B2BF5 /* ModelPricing.swift */; };
 		352353405DB101D4C6E46F07 /* WeeklyUsageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F1B4FB198E9F461FC2A900A /* WeeklyUsageView.swift */; };
 		3B80021C47339DE7A84DA1E9 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E38AD7FE73244F6C197518A /* App.swift */; };
@@ -66,6 +67,7 @@
 		CED451040CE8CD259C561A82 /* BreakNudge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F4C1391F71D6E2E83FB6178 /* BreakNudge.swift */; };
 		CFC34F825CF830C4E26C2F6C /* InsightsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 699C306F64F567C7ECB3EF30 /* InsightsEngine.swift */; };
 		D24AA94B7F67CCA6F7ED4E99 /* UsageBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA6C492B533BBF07B2D28136 /* UsageBlock.swift */; };
+		D2BB16CFE4E7205B1A26F856 /* ICloudTokenSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E62010DC4A055CCD84E3CB4 /* ICloudTokenSync.swift */; };
 		D3F9F4CE98F4BB3A3EA4CA16 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27D106E850ED6383CAD6E7DC /* SettingsView.swift */; };
 		D65FBB0703A0204283DCE39A /* UsageAggregator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 800A96FA476D1E0B8347D1FD /* UsageAggregator.swift */; };
 		D8B0F513B07586CA02F84B62 /* BlockScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DDAA9BACAA725EDD96CEB74 /* BlockScheduleView.swift */; };
@@ -107,6 +109,7 @@
 		4768B69E3299A7EED98E2F27 /* SessionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionListView.swift; sourceTree = "<group>"; };
 		4D7F80E907217766EE0F0D4C /* BurnRateGauge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BurnRateGauge.swift; sourceTree = "<group>"; };
 		4DDAA9BACAA725EDD96CEB74 /* BlockScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockScheduleView.swift; sourceTree = "<group>"; };
+		4E62010DC4A055CCD84E3CB4 /* ICloudTokenSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICloudTokenSync.swift; sourceTree = "<group>"; };
 		5ED31F3D12273254D57D5D97 /* KeychainReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainReader.swift; sourceTree = "<group>"; };
 		699C306F64F567C7ECB3EF30 /* InsightsEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsEngine.swift; sourceTree = "<group>"; };
 		71F4B569CD86845BB9B4BD13 /* DurationFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationFormatter.swift; sourceTree = "<group>"; };
@@ -230,6 +233,7 @@
 				E2BEAC5304E1C346B7CD8C03 /* BiometricCredentialStore.swift */,
 				71F4B569CD86845BB9B4BD13 /* DurationFormatter.swift */,
 				AE09CB9F6F6F69F1FC417B71 /* FSEventStream.swift */,
+				4E62010DC4A055CCD84E3CB4 /* ICloudTokenSync.swift */,
 				44F3E7640573D5785ACBB226 /* JSONLStreamReader.swift */,
 				5ED31F3D12273254D57D5D97 /* KeychainReader.swift */,
 				17467672FAF801F214D2188E /* ProcessLiveness.swift */,
@@ -378,8 +382,8 @@
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					60D032F022D60B12176D4B0D = {
-						DevelopmentTeam = "";
-						ProvisioningStyle = Manual;
+						DevelopmentTeam = C9BQ4L3K7L;
+						ProvisioningStyle = Automatic;
 					};
 					C4FDCF347AF597DF466DF0C6 = {
 						DevelopmentTeam = C9BQ4L3K7L;
@@ -460,6 +464,7 @@
 				B9833ABBDCE96D00F2839D45 /* FSEventStream.swift in Sources */,
 				29557BE3924D0AC417DDC4EB /* HabitEngine.swift in Sources */,
 				1417419B0577B60F334CBE92 /* HabitSuggestionView.swift in Sources */,
+				D2BB16CFE4E7205B1A26F856 /* ICloudTokenSync.swift in Sources */,
 				CFC34F825CF830C4E26C2F6C /* InsightsEngine.swift in Sources */,
 				EF925DA30744920C6FFA5C12 /* InsightsView.swift in Sources */,
 				DDA74A506E2FB2458928B868 /* JSONLStreamReader.swift in Sources */,
@@ -505,6 +510,7 @@
 				C536D8FC82AC9E46B785C7E9 /* BiometricCredentialStore.swift in Sources */,
 				2AE4B958A66133FE55964B7B /* ContentView.swift in Sources */,
 				56B7C0604F5D701F1DB440F6 /* CredentialsManager.swift in Sources */,
+				2B104EBA961ADCA9D6E01019 /* ICloudTokenSync.swift in Sources */,
 				03D055855B69C284588EB533 /* IOSUsageViewModel.swift in Sources */,
 				C0DB097F4482CC3EF0203DCD /* OAuthEndpoint.swift in Sources */,
 				B4152ED0933CA5C82F684ED8 /* OAuthLoginService.swift in Sources */,
@@ -668,11 +674,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ClaudeUsageVisualizer/Resources/ClaudeUsageVisualizer.entitlements;
-				CODE_SIGN_IDENTITY = "md-local-signing";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = C9BQ4L3K7L;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ClaudeUsageVisualizer/Resources/Info.plist;
 				INFOPLIST_KEY_LSUIElement = YES;
@@ -683,7 +688,6 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.claudeusagevisualizer;
-				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 				SWIFT_VERSION = 6.0;
 			};
@@ -695,11 +699,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ClaudeUsageVisualizer/Resources/ClaudeUsageVisualizer.entitlements;
-				CODE_SIGN_IDENTITY = "md-local-signing";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = C9BQ4L3K7L;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ClaudeUsageVisualizer/Resources/Info.plist;
 				INFOPLIST_KEY_LSUIElement = YES;
@@ -710,7 +713,6 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.claudeusagevisualizer;
-				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 				SWIFT_VERSION = 6.0;
 			};
@@ -739,6 +741,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ClaudeUsageVisualizerIOS/ClaudeUsageVisualizerIOS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -763,6 +766,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ClaudeUsageVisualizerIOS/ClaudeUsageVisualizerIOS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
