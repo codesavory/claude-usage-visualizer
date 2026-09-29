@@ -24,20 +24,20 @@ struct UsageHeaderView: View {
             return min(1.0, Double(messages) / Double(max(cap, 1)))
         }()
 
-        // Use the live 5-hour reset only when the snapshot is actually live; a
-        // stale 5h anchor can't be projected reliably (the window rolls from
-        // first activity), so fall back to the local block's reset otherwise.
-        let liveNow = (live?.status == .live || live?.status == .rateLimited)
-        let resetsAt: Date? = {
-            if let live, liveNow, live.fiveHour.resetsAt != .distantFuture {
-                return live.fiveHour.resetsAt
-            }
-            return fallbackReset > 0 ? Date().addingTimeInterval(fallbackReset) : nil
+        // Show the 5-hour reset countdown whenever we hold a server number —
+        // live OR cached. A live snapshot has an exact resetsAt; a cached one is
+        // projected onto the current window (`projectedReset` rolls the stale
+        // anchor forward by the 5h period), which is what the iPhone app shows.
+        // Only when no server number exists do we fall back to the local block.
+        let serverReset: Date? = {
+            guard let live, live.hasRealNumbers else { return nil }
+            let r = live.fiveHour.projectedReset(period: UsageWindowPeriod.fiveHour)
+            return r == .distantFuture ? nil : r
         }()
+        let resetsAt: Date? = serverReset
+            ?? (fallbackReset > 0 ? Date().addingTimeInterval(fallbackReset) : nil)
         let resetSeconds: TimeInterval = {
-            if let live, liveNow, live.fiveHour.resetsAt != .distantFuture {
-                return max(0, live.fiveHour.resetsAt.timeIntervalSince(Date()))
-            }
+            if let serverReset { return max(0, serverReset.timeIntervalSince(Date())) }
             return fallbackReset
         }()
 
