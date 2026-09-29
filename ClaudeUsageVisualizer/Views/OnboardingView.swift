@@ -3,12 +3,12 @@ import SwiftUI
 struct OnboardingView: View {
     var body: some View {
         VStack(spacing: 14) {
-            Image(systemName: "sparkle.magnifyingglass")
+            Image(systemName: "person.badge.key.fill")
                 .font(.system(size: 40))
                 .foregroundStyle(.tint)
-            Text("Waiting for a Claude session")
+            Text("Sign in to see your usage")
                 .font(.headline)
-            Text("Open a terminal, run `claude`, and send a message. This popover will light up with live usage once data appears at `~/.claude/projects`.")
+            Text("Tap the refresh button below (or “exact %”) to unlock your usage with your Mac password. Sign in once on your Mac or iPhone and it syncs to both. A running Claude session in the terminal will also fill this in.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
