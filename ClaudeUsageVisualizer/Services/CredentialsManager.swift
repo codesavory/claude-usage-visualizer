@@ -138,6 +138,20 @@ actor CredentialsManager {
         return true
     }
 
+    /// Adopts a token written to the credentials file by an EXTERNAL writer (the
+    /// Claude Code SessionStart hook, which copies Claude Code's keychain token
+    /// in on every login) and publishes it to iCloud so the iPhone gets it too.
+    /// Returns true when a different token was adopted. Called on each poll and
+    /// on popover open so a hook-written token is picked up within one cycle.
+    @discardableResult
+    func adoptDiskIfNewerAndPush(now: Date = .now) -> Bool {
+        guard let disk = try? PlainCredentialStore.read() else { return false }
+        if let cache, cache.accessToken == disk.accessToken { return false }
+        cache = InMemoryCache(accessToken: disk.accessToken, expiresAt: disk.expiresAt)
+        ICloudTokenSync.push(disk)
+        return true
+    }
+
     private static func isNewer(
         _ a: BiometricCredentialStore.Envelope,
         than b: BiometricCredentialStore.Envelope

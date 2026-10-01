@@ -141,6 +141,10 @@ final class UsageViewModel: ObservableObject {
     }
 
     func refreshOAuthUsage() async {
+        // Pick up a token the Claude Code login hook just wrote to disk (and
+        // push it to the iPhone over iCloud) before fetching, so the widget
+        // stays signed in automatically after every Claude Code login.
+        await credentials.adoptDiskIfNewerAndPush()
         let snap = await oauth.refreshIfNeeded()
         liveUsage = snap
         if let snap {
@@ -216,7 +220,9 @@ final class UsageViewModel: ObservableObject {
     /// read it silently). Never prompts — so opening the widget always shows the
     /// freshest number it can get without interrupting the user.
     func refreshOnAppear() async {
-        // Adopt any token the iPhone validated since we last looked, then fetch.
+        // Adopt a token the Claude Code login hook wrote to disk, or one the
+        // iPhone validated via iCloud, then fetch.
+        await credentials.adoptDiskIfNewerAndPush()
         await credentials.syncFromICloudIfNewer()
         let snap = await oauth.refreshOnAppear()
         liveUsage = snap
