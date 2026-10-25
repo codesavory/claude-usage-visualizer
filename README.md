@@ -33,7 +33,7 @@ xcodebuild -scheme ClaudeUsageVisualizer -configuration Release build
 
 Or open `ClaudeUsageVisualizer.xcodeproj` in Xcode and hit Run.
 
-The first launch will trigger a macOS keychain prompt asking permission to read the `Claude Code-credentials` item. Grant access (once or always-allow) so the app can call the OAuth usage endpoint on your behalf.
+The app reads Claude Code's token through Apple's `/usr/bin/security` tool, which the keychain item already trusts, so there is no keychain password prompt on first launch or after Claude Code rotates the token. Only if that read returns nothing does the manual refresh button fall back to a direct keychain read, which can show the standard macOS dialog.
 
 ## How it works
 
@@ -47,7 +47,7 @@ See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for the full design.
 ## Privacy & security
 
 - **The app is not sandboxed.** This is required to read `~/.claude/` and the keychain. The non-sandbox entitlement is documented in `ARCHITECTURE.md`.
-- **Reads your Claude Code OAuth token from the macOS keychain** via Apple's standard `SecItemCopyMatching` API. macOS will prompt the first time and let you choose Allow / Always Allow / Deny.
+- **Reads your Claude Code OAuth token from the macOS keychain** by running Apple's `/usr/bin/security find-generic-password` and reading its output in-process. Claude Code files the item with that same tool, so it is already on the item's access list and no dialog appears. The token is never logged or put on a command line. Background polls never call `SecItemCopyMatching`, because old-style login-keychain items ignore the "no interaction" flag and would show the password dialog.
 - **The token never leaves your machine** except as a `Bearer` header on TLS requests to `https://api.anthropic.com/api/oauth/usage` — the same endpoint Claude Code itself uses for its `/usage` command.
 - **No prompt or response content is read** from the JSONL transcripts. Only metadata: `sessionId`, `cwd`, `model`, `requestId`, and token counts.
 - **No analytics, telemetry, or third-party network calls.**

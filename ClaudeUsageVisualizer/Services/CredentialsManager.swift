@@ -6,11 +6,13 @@ import Foundation
 /// server numbers when a valid token happens to be present.
 ///
 /// The token lives in the app-owned file store (`PlainCredentialStore`, a 0600
-/// file). We never read Claude Code's keychain item — Claude Code owns and
-/// rewrites that item, which wipes our access grant and re-triggers the
-/// login-password prompt, so borrowing it is fundamentally unreliable. And we
-/// never block the UI on auth: a missing or dead token just means "no exact
-/// number right now", and the widget falls back to the local estimate silently.
+/// file). It is filled from Claude Code's keychain item through
+/// `/usr/bin/security`, which the item already trusts, so reading it never
+/// shows the login-password dialog (see `KeychainReader`). Reading the item
+/// directly with `SecItemCopyMatching` does: Claude Code owns and rewrites the
+/// item, which wipes any access grant this app was given. And we never block the
+/// UI on auth: a missing or dead token just means "no exact number right now",
+/// and the widget falls back to the local estimate silently.
 actor CredentialsManager {
     private struct InMemoryCache {
         let accessToken: String
@@ -74,14 +76,14 @@ actor CredentialsManager {
 
     /// Adopts Claude Code's OWN OAuth token straight from the login keychain
     /// (`Claude Code-credentials`). This is the shortcut that replaces the whole
-    /// browser sign-in routine: the user types their laptop (login-keychain)
-    /// password once, macOS hands over the token, and we cache + persist it so
+    /// browser sign-in routine: we read the token, cache and persist it so
     /// `OAuthUsageClient` can read the exact server numbers.
     ///
-    /// This raises the macOS login-keychain password prompt (this app is not in
-    /// that item's ACL), so ONLY call it from an explicit user action such as a
-    /// manual refresh — never on a background poll. Returns the access token on
-    /// success, or nil if the item is missing or the user cancelled the prompt.
+    /// The read goes through `/usr/bin/security` first, which shows no dialog. Only
+    /// if that returns nothing does it fall back to a direct keychain read, which
+    /// can raise the login-password prompt, so ONLY call this from an explicit
+    /// user action such as a manual refresh. Returns the access token on success,
+    /// or nil if the item is missing or the user cancelled the prompt.
     func adoptClaudeCodeToken() -> String? {
         #if os(macOS)
         guard let creds = try? KeychainReader.readClaudeCredentials(allowInteraction: true) else {
@@ -96,17 +98,29 @@ actor CredentialsManager {
     }
 
     /// Silent variant of `adoptClaudeCodeToken`: reads Claude Code's keychain
-    /// token WITHOUT ever raising the password prompt (`allowInteraction: false`).
-    /// If the login keychain would need user presence it just returns nil and
-    /// leaves any stored token untouched. Safe to call on every widget open —
-    /// it refreshes the token opportunistically when the OS lets us read it, and
-    /// is a silent no-op otherwise. The prompting path stays on the manual
-    /// refresh button only.
+    /// token through `/usr/bin/security` and NEVER makes a direct keychain call,
+    /// so it cannot raise the password dialog (`allowInteraction: false`). If the
+    /// tool returns nothing it just returns nil and leaves any stored token
+    /// untouched. Safe to call on every poll and every widget open.
+    ///
+    /// Because it now succeeds every time, it must not churn: when the keychain
+    /// token is the one already stored it writes nothing and pushes nothing to
+    /// iCloud, and a keychain token that expires earlier than the stored one never
+    /// replaces it. The prompting path stays on the manual refresh button only.
     @discardableResult
     func adoptClaudeCodeTokenSilently() -> String? {
         #if os(macOS)
         guard let creds = try? KeychainReader.readClaudeCredentials(allowInteraction: false) else {
             return nil
+        }
+        if let stored = try? PlainCredentialStore.read() {
+            if stored.accessToken == creds.accessToken {
+                cache = InMemoryCache(accessToken: stored.accessToken, expiresAt: stored.expiresAt)
+                return stored.accessToken
+            }
+            if let storedExp = stored.expiresAt, let newExp = creds.expiresAt, newExp < storedExp {
+                return stored.accessToken
+            }
         }
         persist(accessToken: creds.accessToken, refreshToken: creds.refreshToken, expiresAt: creds.expiresAt)
         return creds.accessToken
