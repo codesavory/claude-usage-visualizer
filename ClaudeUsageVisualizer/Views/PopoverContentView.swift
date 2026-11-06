@@ -125,19 +125,32 @@ struct PopoverContentView: View {
         // correct even from a stale last-known snapshot (weekly grid is fixed).
         let reset = week.projectedReset(period: UsageWindowPeriod.weekly)
         let secs = reset == .distantFuture ? 0 : max(0, reset.timeIntervalSince(Date()))
-        VStack(spacing: 2) {
+        let tint: Color = r > 0.9 ? .red : r > 0.75 ? .orange : r > 0.5 ? .yellow : .green
+        VStack(spacing: 4) {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Rectangle().fill(Color.secondary.opacity(0.07))
-                    Rectangle()
-                        .fill(Color.secondary.opacity(0.20))
+                    Capsule().fill(Color.secondary.opacity(0.15))
+                    Capsule()
+                        .fill(tint)
                         .frame(width: geo.size.width * r)
                         .animation(.easeInOut(duration: 0.4), value: r)
+                    // Where an even pace through the week would be right now.
+                    if let elapsed = week.elapsedFraction(period: UsageWindowPeriod.weekly) {
+                        Rectangle()
+                            .fill(Color.primary.opacity(0.55))
+                            .frame(width: 1.5)
+                            .offset(x: geo.size.width * elapsed)
+                    }
                 }
             }
-            .frame(height: 2)
+            .frame(height: 6)
+            .padding(.horizontal, Theme.popoverPadding)
+            .accessibilityLabel("Weekly usage \(Int((r * 100).rounded())) percent")
             HStack(spacing: 0) {
-                Text("\(Int((r * 100).rounded()))% weekly")
+                Text("\(Int((r * 100).rounded()))% weekly").fontWeight(.semibold).foregroundStyle(.primary)
+                if let pace = week.paceLabel(period: UsageWindowPeriod.weekly) {
+                    Text(" · \(pace)")
+                }
                 if secs > 0 {
                     Text(" · resets \(DurationFormatter.daysAndHours(secs)) · \(DurationFormatter.clockTimeWithWeekday(reset))")
                 }
@@ -145,7 +158,7 @@ struct PopoverContentView: View {
             }
             .font(.caption2)
             .monospacedDigit()
-            .foregroundStyle(.quaternary)
+            .foregroundStyle(.secondary)
             .padding(.horizontal, Theme.popoverPadding)
             .padding(.bottom, 4)
         }

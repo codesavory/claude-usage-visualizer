@@ -10,6 +10,27 @@ import Foundation
 /// the user is signed out of iCloud, reads return nil and writes are dropped.
 /// Every call then degrades gracefully to local-only behaviour, so the apps
 /// still work exactly as before with no iCloud.
+enum ICloudUsageSync {
+    private static let key = "usage_snapshot_v1"
+    private static var store: NSUbiquitousKeyValueStore { .default }
+
+    /// Mac side: publishes a reading for the phone. Numbers only, no credentials.
+    static func push(_ snapshot: OAuthUsageSnapshot) {
+        guard let data = try? JSONEncoder.cuv.encode(snapshot),
+              let json = String(data: data, encoding: .utf8) else { return }
+        store.set(json, forKey: key)
+        store.synchronize()
+    }
+
+    /// Phone side: the Mac's latest reading, or nil.
+    static func pull() -> OAuthUsageSnapshot? {
+        store.synchronize()
+        guard let json = store.string(forKey: key),
+              let data = json.data(using: .utf8) else { return nil }
+        return try? JSONDecoder.cuv.decode(OAuthUsageSnapshot.self, from: data)
+    }
+}
+
 enum ICloudTokenSync {
     private static let key = "oauth_envelope_v1"
     private static var store: NSUbiquitousKeyValueStore { .default }

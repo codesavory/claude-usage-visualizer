@@ -36,10 +36,8 @@ final class IOSUsageViewModel: ObservableObject {
         // "sign in once, both devices work" seamless from the phone's side.
         iCloudObserver = ICloudTokenSync.observe { [weak self] in
             Task { [weak self] in
-                guard let self else { return }
-                if await self.credentials.syncFromICloudIfNewer() {
-                    await self.refreshNow()
-                }
+                // Fires for a new token or a new reading from the Mac.
+                await self?.refresh(force: false)
             }
         }
 
@@ -68,11 +66,22 @@ final class IOSUsageViewModel: ObservableObject {
     }
 
     private func refresh(force: Bool) async {
-        let snap = force ? await oauth.forceRefresh() : await oauth.refreshIfNeeded()
-        liveUsage = snap
+        await credentials.syncFromICloudIfNewer()
+        let mac = ICloudUsageSync.pull()
+        // Ask the endpoint only when the Mac hasn't reported recently, or a little
+        // sooner on an explicit pull to refresh.
+        let macIsCurrent = UsageSourcePicker.isFresh(mac, within: force ? 60 : UsageSourcePicker.macFreshFor)
+        let own: OAuthUsageSnapshot?
+        if macIsCurrent {
+            own = await oauth.lastKnown()
+        } else {
+            own = force ? await oauth.forceRefresh() : await oauth.refreshIfNeeded()
+        }
+        let picked = UsageSourcePicker.pick(own: own, mac: mac)
+        liveUsage = picked
         isLoading = false
-        if let snap, snap.status == .live || snap.status == .rateLimited {
-            UsageSnapshotStore.save(snap)
+        if let picked, picked.status == .live || picked.status == .rateLimited {
+            UsageSnapshotStore.save(picked)
         }
     }
 }

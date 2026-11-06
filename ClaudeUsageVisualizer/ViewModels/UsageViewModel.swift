@@ -5,7 +5,10 @@ import SwiftUI
 @MainActor
 final class UsageViewModel: ObservableObject {
     @Published private(set) var snapshot: UsageSnapshot = .empty
-    @Published private(set) var liveUsage: OAuthUsageSnapshot?
+    @Published private(set) var liveUsage: OAuthUsageSnapshot? {
+        didSet { publishForPhone() }
+    }
+    private var lastPublishedFetch: Date?
     @Published private(set) var suggestions: [OptimizationSuggestion] = []
     @Published private(set) var activeNudge: BreakNudge?
     @Published private(set) var statusIcon: StatusIconState = .offline
@@ -145,6 +148,10 @@ final class UsageViewModel: ObservableObject {
         // push it to the iPhone over iCloud) before fetching, so the widget
         // stays signed in automatically after every Claude Code login.
         await credentials.adoptDiskIfNewerAndPush()
+        // Also follow Claude Code's token rotation during a long session, so the
+        // widget doesn't spend the shared refresh token and the phone stays current.
+        await credentials.adoptClaudeCodeTokenSilently()
+        await credentials.publishIfICloudBehind()
         let snap = await oauth.refreshIfNeeded()
         liveUsage = snap
         if let snap {
@@ -207,6 +214,15 @@ final class UsageViewModel: ObservableObject {
         let url = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".claude/usage_cache.json")
         try? data.write(to: url)
+    }
+
+    /// The iPhone can't read Claude Code's keychain, so it shows what the Mac read.
+    /// Only genuine new readings go out; iCloud throttles chatty writers.
+    private func publishForPhone() {
+        guard let snap = liveUsage, snap.status == .live, snap.hasRealNumbers,
+              snap.fetchedAt != lastPublishedFetch else { return }
+        lastPublishedFetch = snap.fetchedAt
+        ICloudUsageSync.push(snap)
     }
 
     func refreshNow() async {

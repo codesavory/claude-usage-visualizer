@@ -15,6 +15,22 @@ struct OAuthUsageWindow: Sendable, Hashable, Codable {
         while r <= now { r = r.addingTimeInterval(period) }
         return r
     }
+
+    /// How far through the current window we are, 0 to 1. Compared with
+    /// `utilization` this says whether usage is ahead of or behind an even pace.
+    func elapsedFraction(period: TimeInterval, now: Date = Date()) -> Double? {
+        guard resetsAt != .distantFuture, period > 0 else { return nil }
+        let remaining = projectedReset(period: period, now: now).timeIntervalSince(now)
+        return min(1, max(0, 1 - remaining / period))
+    }
+
+    /// Short pace summary for the weekly indicator, for example "12% over pace".
+    func paceLabel(period: TimeInterval, now: Date = Date()) -> String? {
+        guard let elapsed = elapsedFraction(period: period, now: now) else { return nil }
+        let delta = Int((utilization - elapsed * 100).rounded())
+        if abs(delta) < 3 { return "on pace" }
+        return delta > 0 ? "\(delta)% over pace" : "\(-delta)% under pace"
+    }
 }
 
 /// Standard Anthropic window lengths, for projecting a stale reset forward.
@@ -38,6 +54,50 @@ struct OAuthUsageSnapshot: Sendable, Hashable, Codable {
     /// numbers instead of a full-screen sign-in wall when the token lapses.
     var hasRealNumbers: Bool {
         fiveHour.resetsAt != .distantFuture
+    }
+
+    func withStatus(_ newStatus: Staleness) -> OAuthUsageSnapshot {
+        OAuthUsageSnapshot(
+            fiveHour: fiveHour,
+            sevenDay: sevenDay,
+            sevenDaySonnet: sevenDaySonnet,
+            sevenDayOpus: sevenDayOpus,
+            fetchedAt: fetchedAt,
+            status: newStatus
+        )
+    }
+}
+
+/// Decides what the iPhone shows. The Mac is the source of truth: it reads Claude
+/// Code's own token and publishes both that token and the usage numbers over
+/// iCloud. The phone shows whichever reading is newest and never needs a sign-in.
+enum UsageSourcePicker {
+    /// While the Mac's reading is this recent the phone doesn't call the endpoint
+    /// too. The endpoint is rate limited and a second poller only earns 429s.
+    static let macFreshFor: TimeInterval = 360
+    /// A reading older than this is labelled stale rather than live.
+    static let liveFor: TimeInterval = 900
+
+    static func isFresh(_ mac: OAuthUsageSnapshot?, within: TimeInterval = macFreshFor, now: Date = .now) -> Bool {
+        guard let mac, mac.hasRealNumbers else { return false }
+        return now.timeIntervalSince(mac.fetchedAt) < within
+    }
+
+    /// `own` carries a failure status with a misleading `fetchedAt` when the token
+    /// was rejected, so a failed own fetch never outranks a real Mac reading.
+    static func pick(own: OAuthUsageSnapshot?, mac: OAuthUsageSnapshot?, now: Date = .now) -> OAuthUsageSnapshot? {
+        let ownOK = own.flatMap { ($0.hasRealNumbers && ($0.status == .live || $0.status == .rateLimited)) ? $0 : nil }
+        let macOK = mac.flatMap { $0.hasRealNumbers ? $0 : nil }
+        if let ownOK, let macOK {
+            return ownOK.fetchedAt >= macOK.fetchedAt ? ownOK : labelled(macOK, now: now)
+        }
+        if let ownOK { return ownOK }
+        if let macOK { return labelled(macOK, now: now) }
+        return own.flatMap { $0.hasRealNumbers ? $0.withStatus(.stale) : nil }
+    }
+
+    private static func labelled(_ s: OAuthUsageSnapshot, now: Date) -> OAuthUsageSnapshot {
+        s.withStatus(now.timeIntervalSince(s.fetchedAt) < liveFor ? .live : .stale)
     }
 }
 

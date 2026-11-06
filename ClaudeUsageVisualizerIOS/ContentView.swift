@@ -6,12 +6,6 @@ struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var showLogin = false
 
-    private var needsLogin: Bool {
-        switch vm.liveUsage?.status {
-        case .needsLogin, .unauthorized: return true
-        default: return false
-        }
-    }
     private var hasNumbers: Bool { vm.liveUsage?.hasRealNumbers == true }
 
     var body: some View {
@@ -19,20 +13,16 @@ struct ContentView: View {
             Group {
                 if vm.isLoading && vm.liveUsage == nil {
                     ProgressView("Loading usage…")
-                } else if needsLogin && !hasNumbers {
-                    LoginScreen(login: vm.loginService)
+                } else if !hasNumbers {
+                    WaitingForMacScreen(onSignIn: { showLogin = true }) { await vm.refreshNow() }
                 } else {
-                    UsageScreen(snapshot: vm.liveUsage, needsLogin: needsLogin) { showLogin = true } refresh: {
-                        await vm.refreshNow()
-                    }
+                    UsageScreen(snapshot: vm.liveUsage) { await vm.refreshNow() }
                 }
             }
             .navigationTitle("Claude Usage")
         }
-        // Reachable paste screen for the "Sign in" banner: opens Safari for the
-        // code and gives a field (with one-tap clipboard paste) to finish, even
-        // while cached numbers are on screen. Signing in on the Mac instead makes
-        // this unnecessary — the token arrives here over iCloud automatically.
+        // Only reachable from the first-run screen, for someone with no Mac running
+        // the widget. Numbers normally arrive from the Mac over iCloud.
         .sheet(isPresented: $showLogin) {
             LoginScreen(login: vm.loginService) { showLogin = false }
         }
@@ -53,25 +43,20 @@ struct ContentView: View {
 
 private struct UsageScreen: View {
     let snapshot: OAuthUsageSnapshot?
-    let needsLogin: Bool
-    let onSignIn: () -> Void
     let refresh: () async -> Void
 
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                if needsLogin {
-                    SignInBanner(onSignIn: onSignIn)
-                }
                 if let s = snapshot {
                     UsageRing(title: "5-hour block",
                               ratio: min(1, s.fiveHour.utilization / 100),
                               resetsAt: s.fiveHour.projectedReset(period: UsageWindowPeriod.fiveHour),
                               status: s.status)
                     if s.sevenDay.resetsAt != .distantFuture {
-                        WeeklyBar(ratio: min(1, s.sevenDay.utilization / 100),
-                                  resetsAt: s.sevenDay.projectedReset(period: UsageWindowPeriod.weekly))
+                        WeeklyBar(window: s.sevenDay, sonnet: s.sevenDaySonnet, opus: s.sevenDayOpus)
                     }
+                    Freshness(snapshot: s)
                 }
             }
             .padding(24)
@@ -139,9 +124,66 @@ private struct UsageRing: View {
     }
 }
 
+/// When the reading was taken, plus what to do if it's old. Never a sign-in prompt.
+private struct Freshness: View {
+    let snapshot: OAuthUsageSnapshot
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text("Updated \(snapshot.fetchedAt, style: .relative) ago")
+            if Date().timeIntervalSince(snapshot.fetchedAt) > 1800 {
+                Text("Wake your Mac to refresh these numbers.")
+            }
+        }
+        .font(.footnote)
+        .foregroundStyle(.secondary)
+        .multilineTextAlignment(.center)
+    }
+}
+
+/// First run only: nothing has arrived from the Mac yet.
+private struct WaitingForMacScreen: View {
+    let onSignIn: () -> Void
+    let refresh: () async -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 14) {
+                Image(systemName: "laptopcomputer.and.iphone")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.tint)
+                    .accessibilityHidden(true)
+                Text("Waiting for your Mac").font(.title3.bold())
+                Text("Keep the widget running on your Mac with the same iCloud account. Your usage appears here on its own, with nothing to sign in to.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                Button("Check again") { Task { await refresh() } }
+                    .buttonStyle(.borderedProminent)
+                Button("No Mac? Sign in on this iPhone", action: onSignIn)
+                    .font(.footnote)
+                    .padding(.top, 12)
+            }
+            .padding(28)
+            .padding(.top, 60)
+        }
+        .refreshable { await refresh() }
+    }
+}
+
 private struct WeeklyBar: View {
-    let ratio: Double
-    let resetsAt: Date
+    let window: OAuthUsageWindow
+    var sonnet: OAuthUsageWindow? = nil
+    var opus: OAuthUsageWindow? = nil
+
+    private var ratio: Double { min(1, window.utilization / 100) }
+    private var resetsAt: Date { window.projectedReset(period: UsageWindowPeriod.weekly) }
+    private var tint: Color {
+        if ratio > 0.9 { return .red }
+        if ratio > 0.75 { return .orange }
+        if ratio > 0.5 { return .yellow }
+        return .green
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -153,12 +195,26 @@ private struct WeeklyBar: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.secondary.opacity(0.15))
-                    Capsule().fill(Color.accentColor)
+                    Capsule().fill(tint)
                         .frame(width: geo.size.width * ratio)
                         .animation(.easeInOut(duration: 0.5), value: ratio)
+                    // Where an even pace through the week would be right now.
+                    if let elapsed = window.elapsedFraction(period: UsageWindowPeriod.weekly) {
+                        Rectangle()
+                            .fill(Color.primary.opacity(0.55))
+                            .frame(width: 2)
+                            .offset(x: geo.size.width * elapsed)
+                    }
                 }
             }
             .frame(height: 10)
+            .accessibilityElement()
+            .accessibilityLabel("Weekly usage \(Int((ratio * 100).rounded())) percent")
+            if let pace = window.paceLabel(period: UsageWindowPeriod.weekly) {
+                Text(pace).font(.subheadline.weight(.medium))
+            }
+            if let opus { modelLine("Opus", opus) }
+            if let sonnet { modelLine("Sonnet", sonnet) }
             Text("resets \(resetsAt, style: .relative) · \(resetsAt, format: .dateTime.weekday().hour().minute())")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -167,25 +223,15 @@ private struct WeeklyBar: View {
         .padding(16)
         .background(RoundedRectangle(cornerRadius: 14).fill(Color.secondary.opacity(0.08)))
     }
-}
 
-private struct SignInBanner: View {
-    let onSignIn: () -> Void
-    var body: some View {
-        Button {
-            onSignIn()
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "person.badge.key.fill")
-                Text("Signed out — numbers may be stale.")
-                    .font(.subheadline)
-                Spacer()
-                Text("Sign in").fontWeight(.semibold)
-            }
-            .padding(14)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Color.accentColor.opacity(0.12)))
+    private func modelLine(_ name: String, _ w: OAuthUsageWindow) -> some View {
+        HStack {
+            Text(name)
+            Spacer()
+            Text("\(Int(w.utilization.rounded()))%").monospacedDigit()
         }
-        .buttonStyle(.plain)
+        .font(.caption)
+        .foregroundStyle(.secondary)
     }
 }
 

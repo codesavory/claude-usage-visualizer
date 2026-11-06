@@ -142,11 +142,7 @@ actor CredentialsManager {
     @discardableResult
     func syncFromICloudIfNewer(now: Date = .now) -> Bool {
         guard let remote = ICloudTokenSync.pull() else { return false }
-        let local = try? PlainCredentialStore.read()
-        if let local {
-            if local.accessToken == remote.accessToken { return false }
-            if !Self.isNewer(remote, than: local) { return false }
-        }
+        if !Self.shouldAdopt(remote: remote, local: try? PlainCredentialStore.read(), now: now) { return false }
         try? PlainCredentialStore.write(remote)
         cache = InMemoryCache(accessToken: remote.accessToken, expiresAt: remote.expiresAt)
         return true
@@ -164,6 +160,32 @@ actor CredentialsManager {
         cache = InMemoryCache(accessToken: disk.accessToken, expiresAt: disk.expiresAt)
         ICloudTokenSync.push(disk)
         return true
+    }
+
+    /// An expired local token always yields to a longer-lived remote one, however
+    /// the `updatedAt` stamps compare. A phone holding a dead token stamped later
+    /// than the Mac's good one used to stay stuck on it.
+    static func shouldAdopt(
+        remote: BiometricCredentialStore.Envelope,
+        local: BiometricCredentialStore.Envelope?,
+        now: Date
+    ) -> Bool {
+        guard let local else { return true }
+        if local.accessToken == remote.accessToken { return false }
+        if let le = local.expiresAt, le <= now, let re = remote.expiresAt, re > le { return true }
+        return isNewer(remote, than: local)
+    }
+
+    /// Mac only: republishes the stored token when iCloud lacks it, for example
+    /// after the key-value store was reset or a push was dropped. Writes nothing
+    /// when iCloud already holds this token or a newer one.
+    func publishIfICloudBehind() {
+        #if os(macOS)
+        guard let disk = try? PlainCredentialStore.read() else { return }
+        if let remote = ICloudTokenSync.pull(),
+           remote.accessToken == disk.accessToken || Self.isNewer(remote, than: disk) { return }
+        ICloudTokenSync.push(disk)
+        #endif
     }
 
     private static func isNewer(
@@ -211,6 +233,14 @@ actor CredentialsManager {
         _ envelope: BiometricCredentialStore.Envelope,
         now: Date
     ) async throws -> String {
+        #if os(iOS)
+        // The phone never refreshes. The refresh token is shared with Claude Code
+        // on the Mac and is single use, so spending it here either fails, which
+        // used to land on the sign-in screen, or logs the Mac out. The Mac
+        // publishes the next token over iCloud; until then the phone shows the
+        // Mac's latest numbers.
+        throw CredentialError.temporarilyUnavailable
+        #else
         guard let refreshToken = envelope.refreshToken else {
             throw CredentialError.needsLogin
         }
@@ -229,5 +259,6 @@ actor CredentialsManager {
             }
             throw CredentialError.temporarilyUnavailable
         }
+        #endif
     }
 }
